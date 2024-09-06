@@ -399,3 +399,6 @@ FodyWeavers.xsd
 test.c
 .gitignore
 loc.txt
+test.exe
+archive.c
+t.asm
