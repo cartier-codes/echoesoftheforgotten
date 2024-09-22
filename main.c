@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <windows.h>
 /* Detective text-adventure game, where our detective is investigating a cold case from the 1990's about a missing child. Eventually, they realise it's themselves. Retracing their entire history, to find the perpetrator.*/ /* Forward declarations */ typedef struct Inventory Inventory; typedef struct Journal Journal; typedef struct Location Location; typedef struct Item Item; typedef struct Event Event; typedef struct Detective Detective; typedef struct ItemCollection ItemCollection; typedef struct CaseFile CaseFile; typedef struct DialogueTree DialogueTree;typedef struct EMSEvent EMSEvent;typedef struct Character Character;typedef struct EMS EMS; typedef struct CFCollection CFCollection;
-//TODO: CHANGE INITIALISEEMSEVENT, INITIALISEEMS FOR NEW ITEM STRUCTURE BEFORE ADDING ITEMS
-struct Item { char name[100]; int size; int capacity; bool is_collectable; char description[5000]; bool is_container; Item **items;};
+//FIX DROP COMMAND SEG FAULT
+struct Item { char name[100]; int size; int capacity; bool is_collectable; char description[5000]; bool is_container; Item **items; int container_index;};
 struct CaseFile{char name[100]; char case_no [20]; char date[20]; char lead[50]; char location[200]; char summary[1000]; char victims[500];  char evidence[601]; char suspects[500];};
 struct Weapon { char name[100]; char description[1000]; int damage; }; 
 struct Event { char name[100]; char content[1000]; char timestamp[80]; };
 struct Journal { int size; int capacity; Event *events; }; 
-struct Inventory { int size; int cf_size; int cf_cap;int capacity; Item *items; CaseFile *case_files;};
+struct Inventory { int size; int cf_size; int cf_cap;int capacity; Item **items; CaseFile *case_files;};
 struct Location { char name[100]; char description[1000]; char locked_item[100]; int size; int capacity; int case_file_num; int case_file_cap; CaseFile *case_files; Item **items; Location *north; Location *west; Location *east; Location *south; };
 struct ItemCollection{ int size; int capacity; Item **items; };
 struct CFCollection{ int size; int capacity; CaseFile *case_files; };
@@ -48,7 +48,7 @@ struct EMSEvent{
     bool event_state;
     enum EventType type;
     CaseFile *cf_gained;
-    Item *items_gained;
+    Item **items_gained;
     Item *item_required;
     CaseFile *cf_required;
     DialogueTree Dialogue;
@@ -166,6 +166,7 @@ void initialiseItem(Item *item, const char *name, bool is_collectable, const cha
     strcpy(item->description, description);
     item->is_collectable = is_collectable;
     item->is_container = is_container;
+    item->container_index = -1;
 
     if (is_container) {
         item->items = (Item **)malloc(item->capacity * sizeof(Item *)); // Allocate space for pointers to items
@@ -196,7 +197,7 @@ void initialiseInventory(Inventory *inventory)
     inventory->capacity = 32;
     inventory->cf_size = 0;
     inventory->cf_cap = 1;
-    inventory->items = (Item *)malloc(inventory->capacity * sizeof(Item));
+    inventory->items = (Item **)malloc(inventory->capacity * sizeof(Item *));
     inventory->case_files = (CaseFile *)malloc(inventory->cf_cap * sizeof(CaseFile));
 }
 
@@ -205,7 +206,7 @@ void initialiseEMSEvent(EMSEvent *event, EMS *ems, Location *location, enum Even
     event->capacity = 1;
     event->event_id = ems->size;
     event->dependency_index = dep_in;
-    event->items_gained = (Item *)malloc(event->capacity * sizeof(Item));
+    event->items_gained = (Item **)malloc(event->capacity * sizeof(Item));
     event->cf_size = 0;
     event->cf_cap = 1;  // Initialize capacity for CaseFile
     event->cf_gained = (CaseFile *)malloc(event->cf_cap * sizeof(CaseFile));
@@ -280,12 +281,13 @@ void addItemToEvent(EMSEvent *event, Item *item, CaseFile *case_file) {
             fprintf(stderr, "Error: Failed to resize items_gained.\n");
             return;
         }
-        event->items_gained = temp;
+        event->items_gained[event->size] = temp;
+        event->size++;
         event->capacity = new_capacity;
     }
 
     // Add item to items_gained
-    event->items_gained[event->size] = *item;
+    event->items_gained[event->size] = item;
     event->size++;
 }
 
@@ -301,7 +303,7 @@ void addToInventory(Item *item, Inventory *inventory)
         }
     if (inventory->size < inventory->capacity)
     {
-        inventory->items[inventory->size] = *item;
+        inventory->items[inventory->size] = item;
         inventory->size++;
     }
     else
@@ -341,7 +343,7 @@ void updateEMS(EMS *ems,Detective *detective, enum Command command, char *token,
                     }
                     if(ems->event_queue[i].size>0){
                         for(int j= 0; j < ems->event_queue[i].size; j++){
-                            addToInventory(&ems->event_queue[i].items_gained[j], &detective->inventory);
+                            addToInventory(ems->event_queue[i].items_gained[j], &detective->inventory);
                         }
                     }
                     printf("\nYou have acquired items.\n");
@@ -359,8 +361,9 @@ void updateEMS(EMS *ems,Detective *detective, enum Command command, char *token,
                         case DIALOGUE:
                             if((!ems->event_queue[i].event_state)&&(ems->event_queue[ems->event_queue[i].dependency_index].event_state)){
                                 traverseDialogue(&ems->event_queue[i].Dialogue);
-                            }
-                        break;
+                                ems->event_queue[i].event_state = true;
+                                }
+                            break;
                 }
             }
         break;
@@ -446,36 +449,13 @@ void addCaseToRoom(CaseFile *case_file, Location *room){
     room->case_file_num++;
 }
 
-void removeFromInventory(char* name, Inventory *inventory, Detective *detective) {
-    for (int i = 0; i < inventory->size; i++) {
-        if (strcmp(inventory->items[i].name, name) == 0) {
-            // Shift remaining items to the left
-            if(!inventory->items[i].is_collectable){
-                printf("This item cannot be dropped.\n");
-                return;
-            }
-            addItemToRoom(&inventory->items[i], detective->current_location);
-            for (int j = i; j < inventory->size - 1; j++) {
-                inventory->items[j] = inventory->items[j + 1];
-            }
-            inventory->size--;
-            printf("\nItem was removed.\n");
-            return;
-        }
-    }
-    if(strcmp("Journal", name) == 0){
-        printf("This item cannot be dropped.\n");
-        return;
-    }
-    printf("\nItem was not found.\n");
-}
 
 void printInventory(Inventory *inventory)
 {
     printf("Inventory:\n");
     for (int i = 0; i < inventory->size; i++)
     {
-        printf("- %s: %s\n", inventory->items[i].name, inventory->items[i].description);
+        printf("- %s: %s\n", inventory->items[i]->name, inventory->items[i]->description);
     }
     for(int i = 0; i < inventory->cf_size; i++){
         printf("- Case File #%d: %s\n", inventory->cf_size, inventory->case_files[i].name);
@@ -503,7 +483,7 @@ void printItems(Location *room)
 {
     printf("Items in %s: \n\n",room->name);
     for(int i = 0; i < room->size; i++){
-        printf("%s: %s",room->items[i]->name,room->items[i]->description);
+        printf("%s: %s\n",room->items[i]->name,room->items[i]->description);
         if(room->items[i]->is_container){
             printContainerContents(room->items[i],0);
         }
@@ -559,7 +539,15 @@ void openCommand(Detective *detective, char *token,ItemCollection *itemCO){
         }
     }
 
-void removeFromRoom(char* name, Location *location) {
+void removeFromRoom(char* name, int index, Location *location) {
+    if(index != -1){
+        for (int j = index; j < location->size - 1; j++) {
+            location->items[j] = location->items[j + 1];
+        }
+        location->size--;
+        printf("Item was removed from room\n");
+        return;
+    }
     for (int i = 0; i < location->size; i++) {
         if (strcmp(location->items[i]->name, name) == 0) {
             // Shift remaining items to the left
@@ -569,23 +557,70 @@ void removeFromRoom(char* name, Location *location) {
             location->size--;
         }
     }
-}
-
-void takeCommand(Detective *detective,char *itemName, ItemCollection *itemlist) {
-    if(itemName != NULL){
-    for (int i = 0; i < detective->current_location->size; i++) {
-            if (strcmp(itemName, detective->current_location->items[i]->name) == 0) {
-                if(!detective->current_location->items[i]->is_collectable){
-                    printf("This item cannot be taken");
-                    return;
-                }
-                addToInventory(detective->current_location->items[i], &detective->inventory);
-                printf("\nItem added to inventory.\n");
-                removeFromRoom(itemName, detective->current_location);
-                return; // exit after adding the item to the inventory
-            }
     }
-        printf("Item '%s' not found.\n", itemName);
+
+
+void removeFromContainer(Item *container, Item *item){
+    for (int i = 0; i < container->size; i++) {
+    if (strcmp(container->items[i]->name, item->name) == 0) {
+        // Shift remaining items to the left
+        for (int j = i; j < container->size - 1; j++) {
+            container->items[j] = container->items[j + 1];
+            }
+        container->size--;
+        printf("Item was removed \n");
+        }
+    }
+}
+void removeFromInventoryInternal(Detective *detective, Item *item){
+    for (int i = 0; i < detective->inventory.size; i++) {
+        if(strcmp(item->name,detective->inventory.items[i]->name) == 0){
+            addItemToRoom(detective->inventory.items[i], detective->current_location);
+            for (int j = i; j < detective->inventory.size - 1; j++) {
+                detective->inventory.items[j] = detective->inventory.items[j + 1];
+            }
+            detective->inventory.size--;
+            printf("\nItem was removed.\n");
+            return;
+        }
+    }
+}
+void removeFromInventory(char* name, Detective *detective, Item *item) {
+    if(item != NULL){
+    for (int i = 0; i < detective->inventory.size; i++) {
+        if(strcmp(item->name,detective->inventory.items[i]->name) == 0){
+            addItemToRoom(detective->inventory.items[i], detective->current_location);
+            for (int j = i; j < detective->inventory.size - 1; j++) {
+                detective->inventory.items[j] = detective->inventory.items[j + 1];
+            }
+            detective->inventory.size--;
+            printf("\nItem was removed.\n");
+            return;
+        }
+    }
+    }
+    if((strcmp(name,"") != 0)&&(item == NULL)){
+    for (int i = 0; i < detective->inventory.size; i++) {
+        if (strcmp(detective->inventory.items[i]->name, name) == 0) {
+            // Shift remaining items to the left
+            if(!detective->inventory.items[i]->is_collectable){
+                printf("This item cannot be dropped.\n");
+                return;
+            }
+            addItemToRoom(detective->inventory.items[i], detective->current_location);
+            for (int j = i; j < detective->inventory.size - 1; j++) {
+                detective->inventory.items[j] = detective->inventory.items[j + 1];
+            }
+            detective->inventory.size--;
+            printf("\nItem was removed.\n");
+            return;
+        }
+    }
+    if(strcmp("Journal", name) == 0){
+        printf("This item cannot be dropped.\n");
+        return;
+    }
+    printf("\nItem was not found.\n");
     }
 }
 
@@ -596,7 +631,7 @@ void moveCommand(EMS *ems,Detective *detective, char* direction, CFCollection *C
                 if (strcmp(detective->current_location->north->locked_item, "") != 0) {
                     bool hasKey = false;
                     for (int i = 0; i < detective->inventory.size; i++) {
-                        if (strcmp(detective->inventory.items[i].name, detective->current_location->north->locked_item) == 0) {
+                        if (strcmp(detective->inventory.items[i]->name, detective->current_location->north->locked_item) == 0) {
                             detective->current_location = detective->current_location->north;
                             printf("\nYou have moved North.\n");
                             printCurrentRoom(detective->current_location);
@@ -626,7 +661,7 @@ void moveCommand(EMS *ems,Detective *detective, char* direction, CFCollection *C
                 if (strcmp(detective->current_location->east->locked_item, "") != 0) {
                     bool hasKey = false;
                     for (int i = 0; i < detective->inventory.size; i++) {
-                        if (strcmp(detective->inventory.items[i].name, detective->current_location->east->locked_item) == 0) {
+                        if (strcmp(detective->inventory.items[i]->name, detective->current_location->east->locked_item) == 0) {
                             detective->current_location = detective->current_location->east;
                             printf("\nYou have moved East.\n");
                             printCurrentRoom(detective->current_location);
@@ -656,7 +691,7 @@ void moveCommand(EMS *ems,Detective *detective, char* direction, CFCollection *C
                 if (strcmp(detective->current_location->west->locked_item, "") != 0) {
                     bool hasKey = false;
                     for (int i = 0; i < detective->inventory.size; i++) {
-                        if (strcmp(detective->inventory.items[i].name, detective->current_location->west->locked_item) == 0) {
+                        if (strcmp(detective->inventory.items[i]->name, detective->current_location->west->locked_item) == 0) {
                             detective->current_location = detective->current_location->west;
                             printf("\nYou have moved West.\n");
                             printCurrentRoom(detective->current_location);
@@ -686,7 +721,7 @@ void moveCommand(EMS *ems,Detective *detective, char* direction, CFCollection *C
                 if (strcmp(detective->current_location->south->locked_item, "") != 0) {
                     bool hasKey = false;
                     for (int i = 0; i < detective->inventory.size; i++) {
-                        if (strcmp(detective->inventory.items[i].name, detective->current_location->south->locked_item) == 0) {
+                        if (strcmp(detective->inventory.items[i]->name, detective->current_location->south->locked_item) == 0) {
                             detective->current_location = detective->current_location->south;
                             printf("\nYou have moved South.\n");
                             printCurrentRoom(detective->current_location);
@@ -749,7 +784,177 @@ void examineCommand(EMS *ems ,Detective *detective, char *token, CFCollection *C
     }
 }
 
+void dropCommand(EMS *ems, Detective *detective, char *token){
+char *item = strtok(token, " ");
+int item_index = -1;  // Initialize to -1 to indicate not found
 
+if (item == NULL) {
+    printf("Invalid command format.\n");
+    return;
+}
+
+for (int i = 0; i < detective->inventory.size; i++) {
+    if (strcmp(item, detective->inventory.items[i]->name) == 0) {
+        item_index = i;
+        break;
+    }
+}
+
+if (item_index == -1) {
+    char *tail_end = strtok(NULL, " ");
+    if (tail_end) {
+        char two_worded[100];
+        snprintf(two_worded, sizeof(two_worded), "%s %s", item, tail_end);
+        for (int j = 0; j < detective->inventory.size; j++) {
+            if (strcmp(two_worded, detective->inventory.items[j]->name) == 0) {
+                item_index = j;
+                break;
+            }
+        }
+    }
+}
+
+if (item_index == -1) {
+    printf("You do not have this item\n");
+    return;
+}
+
+char *location = strtok(NULL, "");
+
+if (location == NULL) {
+        printf("%d: %s",item_index,detective->inventory.items[item_index]);
+        removeFromInventory("",detective,detective->inventory.items[item_index]);
+    return;
+}
+
+int found_location = 0;
+for (int i = 0; i < detective->current_location->size; i++) {
+    printf(location);
+    if (strcmp(location, detective->current_location->items[i]->name) == 0) {
+        found_location = 1;
+        if (detective->current_location->items[i]->is_container) {
+            addItemToContainer(detective->current_location->items[i],detective->inventory.items[item_index]);
+            removeFromInventoryInternal(detective,detective->inventory.items[item_index] );
+        } else {
+            printf("This is not a valid container\n");
+        }
+        break;
+    }
+}
+
+if (!found_location) {
+    printf("Invalid location or item\n");
+}
+}
+void takeCommand(EMS *ems, Detective *detective, char *token){
+char *item = strtok(token, " ");
+int item_index = -1;  // Initialize to -1 to indicate not found
+int container_index = -1;
+
+printf("Debug: Parsed item: %s\n", item);
+
+if (item == NULL) {
+    printf("Invalid command format.\n");
+    return;
+}
+
+for (int i = 0; i < detective->current_location->size; i++) {
+    printf("Debug: Checking item %s at index %d\n", detective->current_location->items[i]->name, i);
+    
+    if (strcmp(item, detective->current_location->items[i]->name) == 0) {
+        item_index = i;
+        printf("Debug: Item found in room at index %d\n", i);
+        break;
+    }
+    
+    if(detective->current_location->items[i]->is_container && detective->current_location->items[i]->size > 0){
+        printf("Debug: Checking container %s at index %d\n", detective->current_location->items[i]->name, i);
+        for(int j = 0; j < detective->current_location->items[i]->size; j++){
+            printf("Debug: Checking item %s in container at index %d\n", detective->current_location->items[i]->items[j]->name, j);
+            if(strcmp(item, detective->current_location->items[i]->items[j]->name) == 0){
+                item_index = j;
+                container_index = i;
+                printf("Debug: Item found in container at index %d, container at index %d\n", j, i);
+            }
+        }
+    }
+}
+
+if (item_index == -1) {
+    char *tail_end = strtok(NULL, " ");
+    if (tail_end) {
+        char two_worded[100];
+        snprintf(two_worded, sizeof(two_worded), "%s %s", item, tail_end);
+        printf("Debug: Parsed two-worded item: %s\n", two_worded);
+
+        for (int i = 0; i < detective->current_location->size; i++) {
+            printf("Debug: Checking two-worded item %s at index %d\n", detective->current_location->items[i]->name, i);
+
+            if (strcmp(two_worded, detective->current_location->items[i]->name) == 0) {
+                item_index = i;
+                printf("Debug: Two-worded item found in room at index %d\n", i);
+                break;
+            }
+            if(detective->current_location->items[i]->is_container && detective->current_location->items[i]->size > 0){
+                printf("Debug: Checking two-worded item in container %s at index %d\n", detective->current_location->items[i]->name, i);
+                for (int j = 0; j < detective->current_location->items[i]->size; j++) {
+                    if (strcmp(two_worded, detective->current_location->items[j]->name) == 0) {
+                        container_index = i;
+                        item_index = j;
+                        printf("Debug: Two-worded item found in container at index %d, container at index %d\n", j, i);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+if (item_index == -1) {
+    printf("You do not have this item\n");
+    return;
+}
+
+char *location = strtok(NULL, "");
+
+printf("Debug: Parsed location: %s\n", location);
+
+if (location == NULL) {
+    if (container_index == -1) {
+        printf("Debug: Adding item to inventory from room at index %d\n", item_index);
+        addToInventory(detective->current_location->items[item_index], &detective->inventory);
+        removeFromRoom("", item_index, detective->current_location);
+    } else {
+        printf("This item nuh uh\n");
+    }
+    return;
+}
+
+int found_location = 0;
+for (int i = 0; i < detective->current_location->size; i++) {
+    printf("Debug: Checking location %s against item %s\n", location, detective->current_location->items[i]->name);
+    if (strcmp(location, detective->current_location->items[i]->name) == 0) {
+        found_location = 1;
+        printf("Debug: Location found: %s at index %d\n", location, i);
+        
+        if (detective->current_location->items[i]->is_container) {
+            if(i == container_index){
+            printf("Debug: Location is a container, adding item to inventory\n");
+            addToInventory(detective->current_location->items[container_index]->items[item_index], &detective->inventory);
+            removeFromContainer(detective->current_location->items[container_index], detective->current_location->items[container_index]->items[item_index]);
+            }
+        } else {
+            printf("This is not a valid container\n");
+        }
+        break;
+    }
+}
+
+if (!found_location) {
+    printf("Invalid location or item\n");
+}
+
+}
 void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *itemList, CFCollection *CFCO) {
     // Make a copy of the input string to avoid modifying the original
     char buffer[256];
@@ -800,7 +1005,7 @@ void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *i
             char *item = strtok(NULL, "");
             if(item!=NULL){
                 while(*item == ' ')item++;
-                takeCommand(detective, item, itemList);
+                takeCommand(ems,detective,item);
             }
             else{
                 printf("Specify an item to examine.\n");
@@ -810,7 +1015,7 @@ void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *i
             char *item = strtok(NULL,"");
             if(item != NULL){
                 while(*item == ' ' )item++;
-                removeFromInventory(item, &detective->inventory,detective);
+                dropCommand(ems,detective,item);
             }
         }
         else {
@@ -881,7 +1086,7 @@ int main()
     initialiseItem(&lobby_posters, "A plethora of lobby posters",false,"The lobby posters are faded and worn, each one a collage of cold cases, public warnings, and gritty mugshots, their edges curling as if the weight of unsolved mysteries clings to every corner of the station.", &ItemCO,false);
     initialiseItem(&reception_desk,"Reception Desk",false,"The reception desk, with its bulletproof glass and scuffed surface, is cluttered with stacks of paperwork, a buzzing phone, a notepad filled with frantic scribbles, and a coffee cup stained from endless late nights, all under the harsh glare of fluorescent lights.", &ItemCO, false);
     initialiseItem(&office_desk,"Office Desk",false, "Your desk, scarred and cluttered, is piled with case files, yellowed notes, and an old typewriter. A rotary phone buzzes occasionally, and a coffee mug, stained from late nights, sits amid the chaos. A flickering desk lamp casts a dim light over the scene, struggling against the hum of outdated overhead fluorescents.",&ItemCO,true);
-    initialiseItem(&gun,"CZ-75",false,"On the detective\'s desk, the CZ-75 rests with a matte black finish, its sleek lines and ergonomic grip standing out amid the clutter",&ItemCO,false);
+    initialiseItem(&gun,"CZ-75",true,"On the detective\'s desk, the CZ-75 rests with a matte black finish, its sleek lines and ergonomic grip standing out amid the clutter",&ItemCO,false);
 
     initialiseInventory(&inventory);
     initialiseJournal(&journal);
@@ -928,7 +1133,7 @@ int main()
     printNearbyRooms(detective.current_location);
     printf("type help for available commands\n");
     while(loop){
-    char res[256];
+    char res[300];
     char comp[] = "help";
     printf("\nCommand: ");
     fgets(res,sizeof(res),stdin);
