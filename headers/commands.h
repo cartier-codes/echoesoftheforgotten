@@ -6,9 +6,9 @@
 #include <string.h>
 #include "ems.h"
 #include <stdbool.h>
-#include <windows.h>
 #include "remove.h"
 #include <ctype.h>
+#include <unistd.h>
 
 void openCommand(Detective *detective, char *token,ItemCollection *itemCO);
 void moveCommand(EMS *ems,Detective *detective, char* direction, CFCollection *CFCO);

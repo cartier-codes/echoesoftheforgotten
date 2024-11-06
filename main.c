@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <windows.h>
 #include "headers/struct.h"
 #include "headers/initialise.h"
 #include "headers/print.h"
@@ -107,12 +106,12 @@ int main(void)
     addEventToEMS(&office_scene_1_event, &ems);
     addEventToEMS(&examine_scene_1_event,&ems);
 
-    Sleep(1500);
+    sleep(1);
     printInventory(&detective.inventory);
-    Sleep(1500);
+    sleep(1);
     printCurrentRoom(detective.current_location);
     printItems(&lobby);
-    Sleep(1500);
+    sleep(1);
     printNearbyRooms(detective.current_location);
     printf("type help for available commands\n");
     while(loop){

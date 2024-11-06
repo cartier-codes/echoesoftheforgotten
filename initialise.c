@@ -119,8 +119,8 @@ void initialiseRoom(Location *room, char *name, char *description, char* locked_
     strcpy(room->locked_item, locked_item);
     }
 
-    room->size,room->case_file_num, room->loc_size= 0;
-    room->capacity, room->case_file_cap, room->loc_cap = 1;
+    room->size = 0, room->case_file_num = 0, room->loc_size= 0;
+    room->capacity = 0, room->case_file_cap = 0, room->loc_cap = 1;
 
     room->items = (Item **)malloc(room->capacity * sizeof(Item *));
     room->case_files = (CaseFile *)malloc(room->capacity * sizeof(CaseFile));

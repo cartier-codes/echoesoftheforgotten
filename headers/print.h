@@ -1,5 +1,5 @@
 #ifndef PRINT_H
-#define PRINTF_H
+#define PRINT_H
 
 #include "struct.h"
 

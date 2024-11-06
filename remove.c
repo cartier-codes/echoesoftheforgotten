@@ -1,5 +1,5 @@
 #include "headers/remove.h"
-
+#include "headers/add.h"
 void removeFromRoom(char* name, int index, Location *location) {
     if(index != -1){
         for (int j = index; j < location->size - 1; j++) {
@@ -31,7 +31,7 @@ void removeFromContainer(Item *container, Item *item){
         }
     }
 }
-void removeFromInventoryInternal(Detective *detective, Item *item){
+ void removeFromInventoryInternal(Detective *detective, Item *item){
     for (int i = 0; i < detective->inventory.size; i++) {
         if(strcmp(item->name,detective->inventory.items[i]->name) == 0){
             addItemToRoom(detective->inventory.items[i], detective->current_location);

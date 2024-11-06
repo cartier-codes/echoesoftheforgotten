@@ -145,7 +145,32 @@ void moveCommand(EMS *ems,Detective *detective, char* direction, CFCollection *C
             } else {
                 printf("You can't move South.\n");
             }
-        } else {
+        }
+        else if (strcmp(direction, "out") == 0)
+        {
+            if(detective->current_location->outer_location != NULL){ 
+                detective->current_location = detective->current_location->outer_location;
+                printf("You have moved to the %s. \n", detective->current_location->name);
+                printCurrentRoom(detective->current_location);
+                printItems(detective->current_location);
+                printNearbyRooms(detective->current_location);
+                updateEMS(ems, detective, MOVE,"",CFCO);
+
+            }
+        }
+        
+        else {
+            for(int i = 0; i < detective->current_location->loc_size; i++){
+                if(strcmp(detective->current_location->inner_locations[i]->name, direction) == 0){
+                    detective->current_location = detective->current_location->inner_locations[i];
+                    printf("\nYou have moved to the %s.\n", detective->current_location->name);
+                    printCurrentRoom(detective->current_location);
+                    printItems(detective->current_location);
+                    printNearbyRooms(detective->current_location);
+                    updateEMS(ems, detective, MOVE,"",CFCO);
+                    return;
+                }
+            }
             printf("Invalid direction.\n");
         }
     }
@@ -176,7 +201,7 @@ void examineCommand(EMS *ems ,Detective *detective, char *token, CFCollection *C
             printf("%s\n\n", detective->inventory.case_files[cf_num - 1].evidence);
             printf("%s\n\n", detective->inventory.case_files[cf_num - 1].suspects);  // Corrected
             printf("==================================================================================================================================================================\n\n");
-            Sleep(2000);
+            sleep(2000);
             updateEMS(ems, detective, EXAMINE, token, CFCO);
         }
     }
@@ -219,19 +244,19 @@ if (item_index == -1) {
 char *location = strtok(NULL, "");
 
 if (location == NULL) {
-        printf("%d: %s",item_index,detective->inventory.items[item_index]);
+        printf("%d: %s",item_index,detective->inventory.items[item_index]->name);
         removeFromInventory("",detective,detective->inventory.items[item_index]);
     return;
 }
 
 int found_location = 0;
 for (int i = 0; i < detective->current_location->size; i++) {
-    printf(location);
+    printf("%s",location);
     if (strcmp(location, detective->current_location->items[i]->name) == 0) {
         found_location = 1;
         if (detective->current_location->items[i]->is_container) {
             addItemToContainer(detective->current_location->items[i],detective->inventory.items[item_index]);
-            removeFromInventoryInternal(detective,detective->inventory.items[item_index] );
+            removeFromInventoryInternal(detective,detective->inventory.items[item_index]);
         } else {
             printf("This is not a valid container\n");
         }

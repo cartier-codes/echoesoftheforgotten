@@ -28,6 +28,7 @@ void addInnerToRoom(Location *room, Location *inner){
         room->inner_locations = (Location **)realloc(room->inner_locations, room->loc_cap * sizeof(Location *)); // Reallocate space
     }
     room->inner_locations[room->loc_size] = inner;
+    inner->outer_location = room;
     room->loc_size++;
 }
 

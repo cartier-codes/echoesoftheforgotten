@@ -24,6 +24,10 @@ void updateEMS(EMS *ems,Detective *detective, enum Command command, char *token,
                     printf("After setting: event_state = %d\n", ems->event_queue[i].event_state); // Debugging
                 };
                 break;
+                case COMBAT:
+                break;
+                case RANDOM:
+                break;
                 }
             }
         break;
@@ -36,8 +40,18 @@ void updateEMS(EMS *ems,Detective *detective, enum Command command, char *token,
                                 ems->event_queue[i].event_state = true;
                                 }
                             break;
+                        case COMBAT:
+                        break;
+                        case RANDOM:
+                        break;
                 }
             }
+        break;
+        case COMBAT:
+        break;
+        case RANDOM:
+        break;
+        case OPEN:
         break;
 }
     }

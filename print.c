@@ -44,20 +44,20 @@ void printNearbyRooms(Location *location){
     printf("\nLocations within this room: \n");
     if(location->inner_locations[0] != NULL){
     for(int i = 0; i < location->loc_size; i++){
-        printf("- Location: %s\n", location->inner_locations[i]);
+        printf("- Location: %s\n", location->inner_locations[i]->name);
     }}
-    printf("\n\nExits:\n\n");
+    printf("\n\nExits:");
     if (location->north != NULL) {
-        printf("- North: %s\n", location->north->name);
+        printf("\n- North: %s\n", location->north->name);
     }
     if (location->east != NULL) {
-        printf("- East: %s\n", location->east->name);
+        printf("\n- East: %s\n", location->east->name);
     }
     if (location->south != NULL) {
-        printf("- South: %s\n", location->south->name);
+        printf("\n- South: %s\n", location->south->name);
     }
     if (location->west != NULL) {
-        printf("- West: %s\n", location->west->name);
+        printf("\n- West: %s\n", location->west->name);
     }
     printf("\n");
 }

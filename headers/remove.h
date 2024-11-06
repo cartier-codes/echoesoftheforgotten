@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include "struct.h"
-#include "add.h"
 
 void removeFromRoom(char* name, int index, Location *location);
 void removeFromContainer(Item *container, Item *item);
