@@ -21,12 +21,15 @@ int main(void)
     EMSEvent examine_scene_1_event;
     Character detective2;
     Character lieutenant;
+    Character fisherman;
     Inventory inventory;
     Journal journal;
     Location office_street;
     Location bodega;
     Location lobby;
     Location office;
+    Location ridgewood_park;
+    Location fisherman_house;
     Item ID;
     Item office_key;
     Item eight_ball;
@@ -46,20 +49,29 @@ int main(void)
     DialogueTree examine_scene_1_2;
     DialogueTree examine_scene_1_3;
     DialogueTree examine_scene_1_4;
+    DialogueTree ridgewood_scene_1_1;
+    DialogueTree ridgewood_scene_1_2;
+    DialogueTree ridgewood_scene_1_3;
+    DialogueTree ridgewood_scene_1_4;
+
     welcomeMessage();
     initialiseRoom(&lobby, "Lobby", "The police station lobby is a bustling, starkly lit room with a sleek front desk, worn-out chairs, and walls adorned with crime prevention posters and a large, imposing emblem of justice.", "" );
     initialiseRoom(&bodega, "Bodega","Test", "");
     initialiseRoom(&office_street, "City","The street outside the police department is a patchwork of oil stains and faded asphalt, worn down by years of heavy footsteps and quiet patrol cars. Faded yellow lines mark the cracked road, and a flickering streetlamp throws uneven shadows across the chipped concrete steps leading up to the station. A patrol car idles by the curb, its engine a low grumble in the still night air. The faint scent of gasoline and damp pavement lingers, mingling with the distant murmur of city life. Above, the dull hum of a neon sign buzzes, casting a pale blue reflection in the rain-soaked street below.","");
     initialiseRoom(&office, "Office", "Your office, with its smoke-stained walls and yellowing case files scattered across a cluttered desk, hums with the persistent drone of an old fan and carries the faint scent of stale coffee and cigarettes.", "Office Key");
+    initialiseRoom(&ridgewood_park, "Ridgewood Park", "Test","");
+    initialiseRoom(&fisherman_house, "Mysterious house", "Test", "");
 
     addConnection(&lobby, &office, "east");
     addConnection(&lobby, &office_street,"south");
+    addConnection(&ridgewood_park, &office_street,"east");
     addInnerToRoom(&office_street, &bodega);
+    addInnerToRoom(&ridgewood_park, &fisherman_house);
 
 
     initialiseItemLookup(&ItemCO);
     initialiseCFLookup(&CFCO);
-    initialiseCase(&casefileno1,"The Campside Kidnapping","037-992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1978, Michael O\'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents\' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Victim Information:\nName: Michael O\'Connell\nAge: 4\nOccupation: N/A\nPhysical Description:\n\tHeight: 3\"4\n\tWeight: 40lbs\n\tHair: Brown, buzzed\n\tEyes: Green\n\tDistinguishing Features:\n\t\tScar through his right eyebrow\nLast Known Whereabouts:\n\tLocation: 200m north west of Rigewood National Park\'s main entrance\n\tTime: 2200, 23/03/1978", "Location: Ridgewood", "Evidence:\n\tLarge adult sized footprints found leading from the tent toward the rear entrance.\n\tSuspicious Activity:\n\t\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\t\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\t\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\n\tSearch Efforts:\n\t\tSearh teams combed through the park over the span of 3 days.\n\t\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Primary Suspect:\n\tFormer felon- Alfred Zimmerman");
+    initialiseCase(&casefileno1,"The Campside Kidnapping","037-992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1968, Michael O\'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents\' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Victim Information:\nName: Michael O\'Connell\nAge: 4\nOccupation: N/A\nPhysical Description:\n\tHeight: 3\"4\n\tWeight: 40lbs\n\tHair: Brown, buzzed\n\tEyes: Green\n\tDistinguishing Features:\n\t\tScar through his right eyebrow\nLast Known Whereabouts:\n\tLocation: 200m north west of Rigewood National Park\'s main entrance\n\tTime: 2200, 23/03/1978", "Location: Ridgewood", "Evidence:\n\tLarge adult sized footprints found leading from the tent toward the rear entrance.\n\tSuspicious Activity:\n\t\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\t\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\t\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\n\tSearch Efforts:\n\t\tSearh teams combed through the park over the span of 3 days.\n\t\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Primary Suspect:\n\tFormer felon- Alfred Zimmerman");
     addCFToLookup(&CFCO,&casefileno1);
 
     initialiseItem(&ID, "ID", false, "Your detective ID, worn and slightly frayed, shows your stern photo, name, badge number, and department logo, all in a weathered leather wallet.", &ItemCO, false);
@@ -84,6 +96,7 @@ int main(void)
 
     addItemToContainer(&office_desk,&gun);
     initialiseCharacter(&lieutenant, "Lt. Reynolds", NULL);
+    initialiseCharacter(&fisherman, "Alfred Zimmerman", NULL);
     initialiseCharacter(&detective2, "Sr Detective. Kruger", NULL);
 
     initialiseDialogue(&office_scene_o3, &lieutenant, "I know things have been kind of dry lately, so I have an interesting cold case here for you.", NULL, NULL);
@@ -97,6 +110,9 @@ int main(void)
     initialiseDialogue(&examine_scene_1_1, &detective2, "In Ridgewood Park. Damn that's close to home.",&examine_scene_1_2,NULL);
     initialiseDialogue(&examine_scene_1, &detective2, "Interesting. A missing case with an obvious suspect but no arrest.", &examine_scene_1_1, NULL);
 
+    initialiseDialogue(&ridgewood_scene_1_3, &fisherman, "You got some motherfucking nerve boy. I'll tell you what I told you guys back then. I ain't do shit. Now, if you keep pestering me about some missing kid. You'll be the next one.", NULL, NULL);
+    initialiseDialogue(&ridgewood_scene_1_2, &detective2, "Look. I'm here to talk to you about the case you were involved in around 68. You don't have to talk to me, but I'd appreciate it if you did.",&ridgewood_scene_1_3, NULL);
+    initialiseDialogue(&ridgewood_scene_1_1, &fisherman, "Hey!! What the hell do you think you're doing? Rocking up to my home, uninvited. You must have some nerve.",&ridgewood_scene_1_2, NULL);
 
     initialiseEMS(&ems);
     initialiseEMSEvent(&office_scene_1_event, &ems, &office, DIALOGUE, &office_scene_1, -1);

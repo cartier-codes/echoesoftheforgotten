@@ -201,7 +201,7 @@ void examineCommand(EMS *ems ,Detective *detective, char *token, CFCollection *C
             printf("%s\n\n", detective->inventory.case_files[cf_num - 1].evidence);
             printf("%s\n\n", detective->inventory.case_files[cf_num - 1].suspects);  // Corrected
             printf("==================================================================================================================================================================\n\n");
-            sleep(2000);
+            sleep(1);
             updateEMS(ems, detective, EXAMINE, token, CFCO);
         }
     }
