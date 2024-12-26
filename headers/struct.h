@@ -34,6 +34,7 @@ struct DialogueTree{
     char text[500];
     DialogueTree *option_1;
     DialogueTree *option_2;
+    int event_index;
 };
 struct Character{char name[50]; DialogueTree Dialogue;};
 struct EMSEvent{

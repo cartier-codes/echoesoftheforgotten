@@ -4,7 +4,7 @@
 #include "struct.h"
 
 void initialiseCharacter(Character *character, char *name, DialogueTree *Dialogue);
-void initialiseDialogue(DialogueTree *root, Character *speaker, char *text, DialogueTree *node_1, DialogueTree *node_2);
+void initialiseDialogue(DialogueTree *root, Character *speaker, char *text, DialogueTree *node_1, DialogueTree *node_2, int event_index);
 void initialiseJournal(Journal *journal);
 void initialiseCase(CaseFile *case_file,char *name,char *case_no,char *date, char *lead, char *summary, char *victims, char *location, char *evidence, char *suspects);
 void initialiseItemLookup(ItemCollection *itemList);

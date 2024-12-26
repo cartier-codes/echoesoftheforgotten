@@ -30,11 +30,12 @@ void initialiseCharacter(struct Character *character, char *name, struct Dialogu
         character->Dialogue = (struct DialogueTree){0};
     }
 }
-void initialiseDialogue(DialogueTree *root, Character *speaker, char *text, DialogueTree *node_1, DialogueTree *node_2){
+void initialiseDialogue(DialogueTree *root, Character *speaker, char *text, DialogueTree *node_1, DialogueTree *node_2, int event_index){
     root->speaker = speaker;
     strcpy(root->text, text);
     root->option_1 = node_1;
     root->option_2 = node_2;
+    root->event_index = event_index;
 }
 
 void initialiseJournal(Journal *journal) { 

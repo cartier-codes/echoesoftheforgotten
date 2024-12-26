@@ -1,8 +1,9 @@
 #include "headers/dialogue.h"
+#include "headers/ems.h"
+#include "headers/struct.h"
 
-void traverseDialogue(DialogueTree *root){
+void traverseDialogue(EMS *ems, DialogueTree *root, Detective *detective){
     if(root == NULL){
-        printf("Error");
         return;
     }
     if(strcmp(root->speaker->name,"Sr Detective. Kruger") == 0){
@@ -11,16 +12,16 @@ void traverseDialogue(DialogueTree *root){
             return;
         }
         else{
-            traverseDialogue(root->option_1);
+            traverseDialogue(ems, root->option_1, detective);
         }
     }
     else{
         printf("%s: %s\n", root->speaker->name, root->text);
-        if(root->option_1 == NULL & root->option_2 == NULL){
+        if((root->option_1 == NULL && root->option_2 == NULL)){
             return;
         }
         else if(root->option_2 == NULL){
-            traverseDialogue(root->option_1);
+            traverseDialogue(ems, root->option_1, detective);
         }
         else{
         printf("Option 1: %s\n\n", root->option_1->text);
@@ -30,10 +31,20 @@ void traverseDialogue(DialogueTree *root){
         fgets(res, sizeof(res), stdin);
         res[strcspn(res,"\n")] = 0;
         if(strcmp(res, "1") == 0){
-            traverseDialogue(root->option_1);
+            if(root->option_1->event_index < 0){
+                traverseDialogue(ems, root->option_1, detective);
+            }
+            else{
+                triggerEMS(ems, root->option_1->event_index, detective, ems->event_queue[root->event_index].type);
+            }
         }
         else if(strcmp(res, "2") == 0){
-            traverseDialogue(root->option_2);
+            if(root->option_2->event_index < 0){
+                traverseDialogue(ems, root->option_2, detective);
+            }
+            else{
+                triggerEMS(ems, root->option_2->event_index, detective, ems->event_queue[root->event_index].type);
+            }
         }
         }
     }

@@ -5,6 +5,6 @@
 #include "struct.h"
 #include <string.h>
 
-void traverseDialogue(DialogueTree *root);
+void traverseDialogue(EMS *ems, DialogueTree *root, Detective *detective);
 
 #endif

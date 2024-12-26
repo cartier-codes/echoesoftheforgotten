@@ -19,6 +19,7 @@ int main(void)
     EMS ems;
     EMSEvent office_scene_1_event;
     EMSEvent examine_scene_1_event;
+    EMSEvent ridgewood_scene_1_event;
     Character detective2;
     Character lieutenant;
     Character fisherman;
@@ -99,28 +100,31 @@ int main(void)
     initialiseCharacter(&fisherman, "Alfred Zimmerman", NULL);
     initialiseCharacter(&detective2, "Sr Detective. Kruger", NULL);
 
-    initialiseDialogue(&office_scene_o3, &lieutenant, "I know things have been kind of dry lately, so I have an interesting cold case here for you.", NULL, NULL);
-    initialiseDialogue(&office_scene_o1, &detective2, "Doing well, what's up?", &office_scene_o3, NULL);
-    initialiseDialogue(&office_scene_o2, &detective2, "Get to the point Reynolds.", &office_scene_o3, NULL);
-    initialiseDialogue(&office_scene_1, &lieutenant, "Morning partner, how's life treating you?", &office_scene_o1, &office_scene_o2);
+    initialiseDialogue(&office_scene_o3, &lieutenant, "I know things have been kind of dry lately, so I have an interesting cold case here for you.", NULL, NULL, -1);
+    initialiseDialogue(&office_scene_o1, &detective2, "Doing well, what's up?", &office_scene_o3, NULL, -1);
+    initialiseDialogue(&office_scene_o2, &detective2, "Get to the point Reynolds.", &office_scene_o3, NULL, -1);
+    initialiseDialogue(&office_scene_1, &lieutenant, "Morning partner, how's life treating you?", &office_scene_o1, &office_scene_o2, -1);
 
-    initialiseDialogue(&examine_scene_1_4, &detective2, "The O\'Connells\' died in a gas leak, so I can't talk to them now. I should start by interviewing this fisherman. That seems like the most ordered approach and God knows I fucking need order.", NULL,NULL);
-    initialiseDialogue(&examine_scene_1_3, &detective2, "Kid even has an eyebrow scar like me. Normally I wouldn't bother with a cold case, but this one is intriguing me. And the family doesn\'t remember the day they arrrived? Were they drugged perhaps?",&examine_scene_1_4,NULL);
-    initialiseDialogue(&examine_scene_1_2, &detective2, "A young boy, randomly goes missing in the middle of the night, and no one has heard a sliver of information since. Not a whisper, not a sighting, nothing.", &examine_scene_1_3, NULL);
-    initialiseDialogue(&examine_scene_1_1, &detective2, "In Ridgewood Park. Damn that's close to home.",&examine_scene_1_2,NULL);
-    initialiseDialogue(&examine_scene_1, &detective2, "Interesting. A missing case with an obvious suspect but no arrest.", &examine_scene_1_1, NULL);
+    initialiseDialogue(&examine_scene_1_4, &detective2, "The O\'Connells\' died in a gas leak, so I can't talk to them now. I should start by interviewing this fisherman. That seems like the most ordered approach and God knows I fucking need order.", NULL,NULL, -1);
+    initialiseDialogue(&examine_scene_1_3, &detective2, "Kid even has an eyebrow scar like me. Normally I wouldn't bother with a cold case, but this one is intriguing me. And the family doesn\'t remember the day they arrrived? Were they drugged perhaps?",&examine_scene_1_4,NULL, -1);
+    initialiseDialogue(&examine_scene_1_2, &detective2, "A young boy, randomly goes missing in the middle of the night, and no one has heard a sliver of information since. Not a whisper, not a sighting, nothing.", &examine_scene_1_3, NULL, -1);
+    initialiseDialogue(&examine_scene_1_1, &detective2, "In Ridgewood Park. Damn that's close to home.",&examine_scene_1_2,NULL, -1);
+    initialiseDialogue(&examine_scene_1, &detective2, "Interesting. A missing case with an obvious suspect but no arrest.", &examine_scene_1_1, NULL, -1);
 
-    initialiseDialogue(&ridgewood_scene_1_3, &fisherman, "You got some motherfucking nerve boy. I'll tell you what I told you guys back then. I ain't do shit. Now, if you keep pestering me about some missing kid. You'll be the next one.", NULL, NULL);
-    initialiseDialogue(&ridgewood_scene_1_2, &detective2, "Look. I'm here to talk to you about the case you were involved in around 68. You don't have to talk to me, but I'd appreciate it if you did.",&ridgewood_scene_1_3, NULL);
-    initialiseDialogue(&ridgewood_scene_1_1, &fisherman, "Hey!! What the hell do you think you're doing? Rocking up to my home, uninvited. You must have some nerve.",&ridgewood_scene_1_2, NULL);
+    initialiseDialogue(&ridgewood_scene_1_3, &fisherman, "You got some motherfucking nerve boy. I'll tell you what I told you guys back then. I ain't do shit. Now, if you keep pestering me about some missing kid. You'll be the next one.", NULL, NULL, -1);
+    initialiseDialogue(&ridgewood_scene_1_2, &detective2, "Look. I'm here to talk to you about the case you were involved in around 68. You don't have to talk to me, but I'd appreciate it if you did.",&ridgewood_scene_1_3, NULL, -1);
+    initialiseDialogue(&ridgewood_scene_1_1, &fisherman, "Hey!! What the hell do you think you're doing? Rocking up to my home, uninvited. You must have some nerve.",&ridgewood_scene_1_2, NULL, -1);
 
     initialiseEMS(&ems);
     initialiseEMSEvent(&office_scene_1_event, &ems, &office, DIALOGUE, &office_scene_1, -1);
     initialiseEMSEvent(&examine_scene_1_event,&ems, NULL, DIALOGUE, &examine_scene_1,0);
+    initialiseEMSEvent(&ridgewood_scene_1_event,&ems, &fisherman_house, DIALOGUE, &ridgewood_scene_1_1, 1);
+
     addItemToEvent(&office_scene_1_event, NULL, &casefileno1);
     addCFToEvent(&casefileno1,&examine_scene_1_event);
     addEventToEMS(&office_scene_1_event, &ems);
     addEventToEMS(&examine_scene_1_event,&ems);
+    addEventToEMS(&ridgewood_scene_1_event, &ems);
 
     sleep(1);
     printInventory(&detective.inventory);
