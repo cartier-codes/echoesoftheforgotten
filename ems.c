@@ -69,12 +69,16 @@ void updateEMS(EMS *ems, Detective *detective, enum Command command, char *token
 
 void triggerEMS(EMS *ems, int event_index, Detective *detective, enum EventType event)
 {
+    printf("Debug: triggerEMS function called.\n");
     switch (event)
     {
     case DIALOGUE:
+    printf("Debug: Case DIALOGUE reached.\n");
         if ((ems->event_queue[event_index].location == NULL || ems->event_queue[event_index].location == detective->current_location) && (!ems->event_queue[event_index].event_state) && (ems->event_queue[event_index].dependency_index < 0 || ems->event_queue[ems->event_queue[event_index].dependency_index].event_state))
         {
+            printf("Debug: IF statement passed.\n");
             traverseDialogue(ems, &ems->event_queue[event_index].Dialogue, detective);
+            printf("Debug: traverseDialogue function called.\n");
             ems->event_queue[event_index].event_state = true;
         }
     case COMBAT:

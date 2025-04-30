@@ -55,7 +55,7 @@ int main(void)
     DialogueTree ridgewood_scene_1_3;
     DialogueTree ridgewood_scene_1_4;
     DialogueTree ridgewood_scene_1_5;
-    DialogueTree test_event_1;
+    DialogueTree after_ridge_1;
     DialogueTree test_event_2;
     EMSEvent TTE1;
     EMSEvent TTE2;
@@ -76,7 +76,7 @@ int main(void)
 
     initialiseItemLookup(&ItemCO);
     initialiseCFLookup(&CFCO);
-    initialiseCase(&casefileno1, "The Campside Kidnapping", "037-992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1968, Michael O\'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents\' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Victim Information:\nName: Michael O\'Connell\nAge: 4\nOccupation: N/A\nPhysical Description:\n\tHeight: 3\"4\n\tWeight: 40lbs\n\tHair: Brown, buzzed\n\tEyes: Green\n\tDistinguishing Features:\n\t\tScar through his right eyebrow\nLast Known Whereabouts:\n\tLocation: 200m north west of Rigewood National Park\'s main entrance\n\tTime: 2200, 23/03/1978", "Location: Ridgewood", "Evidence:\n\tLarge adult sized footprints found leading from the tent toward the rear entrance.\n\tSuspicious Activity:\n\t\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\t\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\t\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\n\tSearch Efforts:\n\t\tSearh teams combed through the park over the span of 3 days.\n\t\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Primary Suspect:\n\tFormer felon- Alfred Zimmerman");
+    initialiseCase(&casefileno1, "The Campside Kidnapping", "C037992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1968, Michael O\'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents\' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Victim Information:\nName: Michael O\'Connell\nAge: 4\nOccupation: N/A\nPhysical Description:\n\tHeight: 3\"4\n\tWeight: 40lbs\n\tHair: Brown, buzzed\n\tEyes: Green\n\tDistinguishing Features:\n\t\tScar through his right eyebrow\nLast Known Whereabouts:\n\tLocation: 200m north west of Rigewood National Park\'s main entrance\n\tTime: 2200, 23/03/1978", "Location: Ridgewood", "Evidence:\n\tLarge adult sized footprints found leading from the tent toward the rear entrance.\n\tSuspicious Activity:\n\t\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\t\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\t\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\n\tSearch Efforts:\n\t\tSearh teams combed through the park over the span of 3 days.\n\t\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Primary Suspect:\n\tFormer felon- Alfred Zimmerman");
     addCFToLookup(&CFCO, &casefileno1);
 
     initialiseItem(&ID, "ID", false, "Your detective ID, worn and slightly frayed, shows your stern photo, name, badge number, and department logo, all in a weathered leather wallet.", &ItemCO, false);
@@ -115,18 +115,18 @@ int main(void)
     initialiseDialogue(&examine_scene_1_1, &detective2, "In Ridgewood Park. Damn that's close to home.", &examine_scene_1_2, NULL, -1);
     initialiseDialogue(&examine_scene_1, &detective2, "Interesting. A missing case with an obvious suspect but no arrest.", &examine_scene_1_1, NULL, -1);
 
-    initialiseDialogue(&ridgewood_scene_1_5, &fisherman, "Alright. I'll be on my way sir.", NULL, NULL, -1);
-    initialiseDialogue(&ridgewood_scene_1_3, &fisherman, "You got some motherfucking nerve boy. I'll tell you what I told you guys back then. I ain't do shit. Now, if you keep pestering me about some missing kid. You'll be the next one.", &ridgewood_scene_1_4, NULL,-1);
+    initialiseDialogue(&ridgewood_scene_1_5, &detective2, "Alright. I'll be on my way sir.", NULL, NULL, 3);
+    initialiseDialogue(&ridgewood_scene_1_3, &fisherman, "You got some motherfucking nerve boy. I'll tell you what I told you guys back then. I ain't do shit. Now, if you keep pestering me about some missing kid. You'll be the next one.", &ridgewood_scene_1_5, NULL, -1);
     initialiseDialogue(&ridgewood_scene_1_2, &detective2, "Look. I'm here to talk to you about the case you were involved in around 68. You don't have to talk to me, but I'd appreciate it if you did.", &ridgewood_scene_1_3, NULL, -1);
     initialiseDialogue(&ridgewood_scene_1_1, &fisherman, "Hey!! What the hell do you think you're doing? Rocking up to my home, uninvited. You must have some nerve.", &ridgewood_scene_1_2, NULL, -1);
 
+    initialiseDialogue(&after_ridge_1, &detective2, "This job doesn't pay me enough to deal with this shit.", NULL, NULL, -1);
 
     initialiseEMS(&ems);
     initialiseEMSEvent(&office_scene_1_event, &ems, &office, DIALOGUE, &office_scene_1, -1);
     initialiseEMSEvent(&examine_scene_1_event, &ems, NULL, DIALOGUE, &examine_scene_1, 0);
     initialiseEMSEvent(&ridgewood_scene_1_event, &ems, &fisherman_house, DIALOGUE, &ridgewood_scene_1_1, 1);
-    initialiseEMSEvent(&TTE1, &ems, NULL, DIALOGUE, &test_event_1, 2);
-    initialiseEMSEvent(&TTE2, &ems, NULL, DIALOGUE, &test_event_2, 2);
+    initialiseEMSEvent(&TTE1, &ems, NULL, DIALOGUE, &after_ridge_1, 2);
 
     addItemToEvent(&office_scene_1_event, NULL, &casefileno1);
     addCFToEvent(&casefileno1, &examine_scene_1_event);
@@ -134,7 +134,6 @@ int main(void)
     addEventToEMS(&examine_scene_1_event, &ems);
     addEventToEMS(&ridgewood_scene_1_event, &ems);
     addEventToEMS(&TTE1, &ems);
-    addEventToEMS(&TTE2, &ems);
 
     sleep(1);
     printInventory(&detective.inventory);

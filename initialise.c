@@ -135,6 +135,8 @@ void initialiseRoom(Location *room, char *name, char *description, char* locked_
 }
 void initialisePlayer(Detective *detective, Inventory *inventory, Journal *journal, Location *current_location)
 {
+    char name[50] = "MAXKRUGER";
+    strcpy(detective->username, name);
     detective->inventory = *inventory;
     detective->journal = *journal;
     detective->current_location = current_location;

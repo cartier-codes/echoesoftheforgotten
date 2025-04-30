@@ -13,7 +13,7 @@ struct Inventory { int size; int cf_size; int cf_cap;int capacity; Item **items;
 struct Location { char name[100]; char description[1000]; char locked_item[100]; int size; int capacity; int case_file_num; int case_file_cap; int loc_size; int loc_cap; CaseFile *case_files; Item **items; Location *north; Location *west; Location *east; Location *south; Location **inner_locations; Location *outer_location;};
 struct ItemCollection{ int size; int capacity; Item **items; };
 struct CFCollection{ int size; int capacity; CaseFile *case_files; };
-struct Detective { Inventory inventory; Journal journal; Location *current_location; };
+struct Detective { char username[50]; Inventory inventory; Journal journal; Location *current_location; };
 
 #define COLOR_BOLD  "\e[1m"
 #define COLOR_OFF   "\e[m"
