@@ -6,14 +6,14 @@ typedef struct Inventory Inventory; typedef struct Journal Journal; typedef stru
 
 struct Item { char name[100]; int size; int capacity; bool is_collectable; char description[5000]; bool is_container; Item **items; int container_index;};
 struct CaseFile{char name[100]; char case_no [20]; char date[20]; char lead[50]; char location[200]; char summary[1000]; char victims[500];  char evidence[601]; char suspects[500];};
-struct Weapon { char name[100]; char description[1000]; int damage; }; 
+struct Weapon { char name[100]; char description[1000]; int damage; };
 struct Event { char name[100]; char content[1000]; char timestamp[80]; };
-struct Journal { int size; int capacity; Event *events; }; 
+struct Journal { int size; int capacity; Event *events; };
 struct Inventory { int size; int cf_size; int cf_cap;int capacity; Item **items; CaseFile *case_files;};
 struct Location { char name[100]; char description[1000]; char locked_item[100]; int size; int capacity; int case_file_num; int case_file_cap; int loc_size; int loc_cap; CaseFile *case_files; Item **items; Location *north; Location *west; Location *east; Location *south; Location **inner_locations; Location *outer_location;};
 struct ItemCollection{ int size; int capacity; Item **items; };
 struct CFCollection{ int size; int capacity; CaseFile *case_files; };
-struct Detective { char username[50]; Inventory inventory; Journal journal; Location *current_location; };
+struct Detective { char officer_id[20]; Inventory inventory; Journal journal; Location *current_location; };
 
 #define COLOR_BOLD  "\e[1m"
 #define COLOR_OFF   "\e[m"

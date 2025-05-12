@@ -38,6 +38,7 @@ int main(void)
     Item office_desk;
     Item reception_desk;
     Item gun;
+    Item post_it;
     CaseFile casefileno1;
     CFCollection CFCO;
     ItemCollection ItemCO;
@@ -86,6 +87,7 @@ int main(void)
     initialiseItem(&reception_desk, "Reception Desk", false, "The reception desk, with its bulletproof glass and scuffed surface, is cluttered with stacks of paperwork, a buzzing phone, a notepad filled with frantic scribbles, and a coffee cup stained from endless late nights, all under the harsh glare of fluorescent lights.", &ItemCO, false);
     initialiseItem(&office_desk, "Office Desk", false, "Your desk, scarred and cluttered, is piled with case files, yellowed notes, and an old typewriter. A rotary phone buzzes occasionally, and a coffee mug, stained from late nights, sits amid the chaos. A flickering desk lamp casts a dim light over the scene, struggling against the hum of outdated overhead fluorescents.", &ItemCO, true);
     initialiseItem(&gun, "CZ-75", true, "On the detective\'s desk, the CZ-75 rests with a matte black finish, its sleek lines and ergonomic grip standing out amid the clutter", &ItemCO, false);
+    initialiseItem(&post_it, "Post It", false, "An incredibly creased post-it note  with \"Username: MAXKRUGER Password: eightballboy scribbled erratically on it.", &ItemCO, false);
 
     initialiseInventory(&inventory);
     initialiseJournal(&journal);
@@ -94,6 +96,8 @@ int main(void)
     addToInventory(&ID, &detective.inventory);
     addToInventory(&office_key, &detective.inventory);
     addToInventory(&eight_ball, &detective.inventory);
+    addToInventory(&post_it, &detective.inventory);
+
 
     addItemToRoom(&lobby_posters, &lobby);
     addItemToRoom(&reception_desk, &lobby);

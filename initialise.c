@@ -38,8 +38,8 @@ void initialiseDialogue(DialogueTree *root, Character *speaker, char *text, Dial
     root->event_index = event_index;
 }
 
-void initialiseJournal(Journal *journal) { 
-    journal->size = 0; journal->capacity = 1; journal->events = (Event *)malloc(journal->capacity * sizeof(Event)); } 
+void initialiseJournal(Journal *journal) {
+    journal->size = 0; journal->capacity = 1; journal->events = (Event *)malloc(journal->capacity * sizeof(Event)); }
 
 void initialiseCase(CaseFile *case_file,char *name,char *case_no,char *date, char *lead, char *summary, char *victims, char *location, char *evidence, char *suspects){
 
@@ -94,7 +94,7 @@ void initialiseInventory(Inventory *inventory)
     inventory->case_files = (CaseFile *)malloc(inventory->cf_cap * sizeof(CaseFile));
 }
 
-void initialiseEMSEvent(EMSEvent *event, EMS *ems, Location *location, enum EventType type, DialogueTree *Dialogue, int dep_in) {  
+void initialiseEMSEvent(EMSEvent *event, EMS *ems, Location *location, enum EventType type, DialogueTree *Dialogue, int dep_in) {
     event->size = 0;
     event->capacity = 1;
     event->event_id = ems->size;
@@ -135,10 +135,9 @@ void initialiseRoom(Location *room, char *name, char *description, char* locked_
 }
 void initialisePlayer(Detective *detective, Inventory *inventory, Journal *journal, Location *current_location)
 {
-    char name[50] = "MAXKRUGER";
-    strcpy(detective->username, name);
+    char *o_id = "DET88411";
+    strcpy(detective->officer_id, o_id);
     detective->inventory = *inventory;
     detective->journal = *journal;
     detective->current_location = current_location;
 }
-
