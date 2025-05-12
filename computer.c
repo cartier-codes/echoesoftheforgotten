@@ -715,7 +715,5 @@ void processCommand(SNTRPH *sntrph, char *input){
 int main(){
     SNTRPH sntrph;
     populateDB(&sntrph);
-    processCommand(&sntrph, "CREATE ADDRESS");
-
     return 0;
 }
