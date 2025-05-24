@@ -434,6 +434,7 @@ void viewOfficer(Officer *off)
     printf("--------------------------------------------------\n\n");
     printf("CRIMINAL REC:        %s\n", off->base->criminal_record);
     printf("ADDRESS:        %s, %s, %s\n", off->base->address->street, off->base->address->city, off->base->address->zip_code);
+    printf("STATUS:        %s\n", off->base->address);
     printf("--------------------------------------------------\n\n");
     if (off->disciplinary_actions[0] != NULL)
     {
@@ -637,7 +638,6 @@ void MailboxUpdate(SNTRPH *sntrph)
         }
     }
 }
-// SEND MESSAGE DET88411;
 
 void ViewMailbox(SNTRPH *sntrph)
 {
@@ -724,15 +724,14 @@ Evidence *checkEvidence(SNTRPH *sntrph, char *token)
 {
     for (int i = 0; i < sntrph->evidenceArchive.total_items; i++)
     {
-        if (strcmp(token, sntrph->evidenceArchive.evidence_items[sntrph->evidenceArchive.total_items - 1]->evidence_id) == 0)
+        if (strcmp(token, sntrph->evidenceArchive.evidence_items[i]->evidence_id) == 0)
         {
-            return sntrph->evidenceArchive.evidence_items[sntrph->evidenceArchive.total_items - 1];
+            return sntrph->evidenceArchive.evidence_items[i];
         }
     }
     return false;
 }
 
-// Helper to trim newline from fgets input
 void trim_newline(char *str)
 {
     size_t len = strlen(str);
@@ -740,7 +739,6 @@ void trim_newline(char *str)
         str[len - 1] = '\0';
 }
 
-// Find a person by ID
 Person *findPersonById(SNTRPH *sntrph, const char *id)
 {
     for (int i = 0; i < sntrph->personlist.person_count; i++)
@@ -753,7 +751,6 @@ Person *findPersonById(SNTRPH *sntrph, const char *id)
     return NULL;
 }
 
-// Main function to add a report
 void addReport(SNTRPH *sntrph)
 {
     // Allocate memory for new report
@@ -815,16 +812,149 @@ void addReport(SNTRPH *sntrph)
 
 Officer *check_officer(SNTRPH *sntrph, char *token)
 {
-    Officer *off = malloc(sizeof(Officer));
-    if (sntrph->officerList.officer_count < 1)
+    printf("[CHECKPOINT C1] Entered check_officer()\n");
+
+    if (sntrph == NULL)
     {
+        printf("[ERROR] sntrph is NULL\n");
         return NULL;
     }
+
+    if (sntrph->officerList.officer_count < 1)
+    {
+        printf("[CHECKPOINT C2] Officer count < 1\n");
+        return NULL;
+    }
+
+    if (sntrph->officerList.officers == NULL)
+    {
+        printf("[ERROR] officerList.officers is NULL\n");
+        return NULL;
+    }
+
     for (int i = 0; i < sntrph->officerList.officer_count; i++)
     {
+        if (sntrph->officerList.officers[i] == NULL)
+        {
+            printf("[WARNING] Officer at index %d is NULL\n", i);
+            continue;
+        }
+
+        if (sntrph->officerList.officers[i]->b_no == NULL)
+        {
+            printf("[WARNING] Officer at index %d has NULL b_no\n", i);
+            continue;
+        }
+
+        printf("[CHECKPOINT C3] Comparing token '%s' with b_no '%s'\n", token, sntrph->officerList.officers[i]->b_no);
+
         if (strcmp(token, sntrph->officerList.officers[i]->b_no) == 0)
         {
+            printf("[CHECKPOINT C4] Match found at index %d\n", i);
             return sntrph->officerList.officers[i];
+        }
+    }
+
+    printf("[CHECKPOINT C5] No matching officer found\n");
+    return NULL;
+}
+
+AuditLog *check_log(SNTRPH *sntrph, char *token){
+    if(sntrph->logList.log_count == 0){
+        PrintLine("!! AUDIT TRAIL IS EMPTY !!");
+    }
+    if(strcmp(token, "") == 0){
+        PrintLine("!! TOKEN IS EMPTY !!");
+        return;
+    }
+    for(int i = 0; i < sntrph->logList.log_count; i++){
+        if(strcmp(token, sntrph->logList.logs[i]) == 0){
+            return sntrph->logList.logs[i];
+        }
+    }
+}
+
+Address *check_addressP(SNTRPH *sntrph, char *person){
+    if(sntrph->addressList.address_count == 0){
+        PrintLine("!! ADDRESSES ARE EMPTY !!");
+        return NULL;
+    }
+    if(strcmp(person, "") == 0){
+        PrintLine("!! TOKEN IS EMPTY !!");
+        return NULL;
+    }
+    for(int i = 0; i < sntrph->addressList.address_count; i++){
+        for(int j = 0; j < sntrph->addressList.addresses[i]->person_count; j++){
+            if(strcmp(person, sntrph->addressList.addresses[i]->person_list[j]->person_id) == 0){
+                return sntrph->addressList.addresses[i];
+            }
+        }
+    }
+
+}
+
+Person *check_person(SNTRPH *sntrph, char *token) {
+    if (sntrph->personlist.person_count == 0) {
+        PrintLine("!! PERSON LIST IS EMPTY !!");
+        return NULL;
+    }
+
+    if (token == NULL || strcmp(token, "") == 0) {
+        PrintLine("!! TOKEN IS EMPTY !!");
+        return NULL;
+    }
+
+    Person *matches[50];
+    int match_count = 0;
+
+    for (int i = 0; i < sntrph->personlist.person_count; i++) {
+        Person *p = sntrph->personlist.person_list[i];
+
+        if (strcmp(token, p->person_id) == 0 ||
+            strcmp(token, p->first_name) == 0 ||
+            strcmp(token, p->last_name) == 0 ||
+            strcmp(token, p->DOB) == 0 ||
+            strcmp(token, p->status) == 0 ||
+            strcmp(token, p->relationship_status) == 0 ||
+            strstr(p->criminal_record, token) != NULL)
+        {
+            if (match_count < 50) {
+                matches[match_count++] = p;
+            }
+        }
+    }
+
+    if (match_count == 0) {
+        PrintLine("!! NO MATCH FOUND !!");
+        return NULL;
+    }
+
+    if (match_count == 1) {
+        return matches[0];
+    }
+
+    // Multiple matches found - display options
+    printf("Multiple matches found:\n");
+    for (int i = 0; i < match_count; i++) {
+        printf("%d) ID: %s, Name: %s %s, DOB: %s\n", i + 1,
+               matches[i]->person_id,
+               matches[i]->first_name,
+               matches[i]->last_name,
+               matches[i]->DOB);
+    }
+
+    // Prompt user to select
+    int choice = 0;
+    char input[10];
+    while (1) {
+        printf("Enter the number of the person you want to select (1-%d): ", match_count);
+        fgets(input, sizeof(input), stdin);
+        choice = atoi(input);
+
+        if (choice >= 1 && choice <= match_count) {
+            return matches[choice - 1];
+        } else {
+            printf("Invalid selection. Please try again.\n");
         }
     }
 }
@@ -1016,41 +1146,373 @@ void addOfficer_Input(SNTRPH *sntrph)
 
     printf("[✓] OFFICER CREATED: %s %s, Title: %s, Clearance: %d, b_no: %s, Address: %s\n", first_name, last_name, title, clearance, b_no, street);
 }
-// Helper function to seed multiple officers automatically
+
+void editOfficer(SNTRPH *sntrph, char *token)
+{
+    Officer *officer = check_officer(sntrph, token);
+    bool editing = true;
+    while (editing)
+    {
+        printf("\n--------------------------------------------------\n");
+        printf("            INFORMATION ALTERING SYSTEM - OFFICERS\n");
+        printf("--------------------------------------------------\n");
+        printf("1.) Clearance/Title\n");
+        printf("2.) First Name\n");
+        printf("3.) Last Name\n");
+        printf("4.) Criminal Record\n");
+        printf("5.) Relationship Status\n");
+        printf("6.) Date of birth\n");
+        printf("7.) Status\n");
+        printf("8.) Username\n");
+        printf("9.) Password\n");
+        printf("10.) QUIT\n");
+        char buffer[4];
+        printf("> Enter your choice: ");
+        fgets(buffer, sizeof(buffer), stdin);
+        int buf = atoi(buffer);
+
+        switch (buf)
+        {
+        case 1:
+            printf("> Enter the clearance: ");
+            char clearance_input[4];
+            fgets(clearance_input, sizeof(clearance_input), stdin);
+            int clearance = atoi(clearance_input);
+            const char *title;
+            switch (clearance)
+            {
+            case 1:
+                title = "Junior Detective";
+                break;
+            case 2:
+                title = "Detective";
+                break;
+            case 3:
+                title = "Senior Detective";
+                break;
+            case 4:
+                title = "Lieteunant";
+                break;
+            case 5:
+                title = "Inspector";
+                break;
+            default:
+                title = "Unknown";
+            }
+            strcpy(officer->title, title);
+            officer->clearance = clearance;
+            break;
+        case 2:
+            printf("> Enter the new first name: ");
+            char first_name[50];
+            fgets(first_name, sizeof(first_name), stdin);
+            first_name[strcspn(first_name, "\n")] = '\0';
+            strcpy(officer->base->first_name, first_name);
+            break;
+        case 3:
+            printf("> Enter the new last name: ");
+            char last_name[50];
+            fgets(last_name, sizeof(last_name), stdin);
+            last_name[strcspn(last_name, "\n")] = '\0';
+            strcpy(officer->base->last_name, last_name);
+            break;
+        case 4:
+            printf("> Enter the new criminal record: ");
+            char criminal_record[500];
+            fgets(criminal_record, sizeof(criminal_record), stdin);
+            criminal_record[strcspn(criminal_record, "\n")] = '\0';
+            strcpy(officer->base->criminal_record, criminal_record);
+            break;
+        case 5:
+            printf("> Enter the new relationship status");
+            char relationship_status[50];
+            fgets(relationship_status, sizeof(relationship_status), stdin);
+            relationship_status[strcspn(relationship_status, "\n")] = '\0';
+            strcpy(officer->base->relationship_status, relationship_status);
+            break;
+        case 6:
+            printf("> Enter the new DOB:");
+            char DOB[20];
+            fgets(DOB, sizeof(DOB), stdin);
+            DOB[strcspn(DOB, "\n")] = '\0';
+            strcpy(officer->base->DOB, DOB);
+            break;
+        case 7:
+            printf("> Enter the new status; ");
+            char status[50];
+            fgets(status, sizeof(status), stdin);
+            status[strcspn(status, "\n")] = '\0';
+            strcpy(officer->base->status, status);
+            break;
+        case 8:
+            printf("> Enter the new username: ");
+            char username[50];
+            fgets(username, sizeof(username), stdin);
+            username[strcspn(username, "\n")] = '\0';
+            strcpy(officer->username, username);
+            break;
+        case 9:
+            printf("> Enter the new password: ");
+            char password[50];
+            fgets(password, sizeof(password), stdin);
+            password[strcspn(password, "\n")] = '\0';
+            strcpy(officer->password, password);
+            break;
+        case 10:
+            char date[15];
+            get_current_date(date);
+
+            char officer_name[120];
+            snprintf(officer_name, sizeof(officer_name), "%s %s %s", sntrph->current_user->title, sntrph->current_user->base->first_name, sntrph->current_user->base->last_name);
+
+            char editofficer[120];
+            snprintf(editofficer, sizeof(editofficer), "%s %s %s", officer->title, officer->base->first_name, officer->base->last_name);
+
+            char description[200];
+            snprintf(description, sizeof(description), "%s ALTERED %s's OFFICER PROFILE ON %s", officer_name, editofficer, date);
+            addLog(sntrph, "OFFICER ALTERATION", officer->b_no, sntrph->current_user, description);
+            editing = false;
+            PrintLine("Quitting...");
+            PrintLine("--------------------------------------------------");
+            break;
+        }
+    }
+}
+
+void editDisciplinary(SNTRPH *sntrph, char *token){
+    AuditLog *log = check_log(sntrph, token);
+    bool editing = true;
+    while (editing)
+    {
+        printf("\n--------------------------------------------------\n");
+        printf("            INFORMATION ALTERING SYSTEM - AUDIT TRAIL\n");
+        printf("--------------------------------------------------\n");
+        printf("1.) Action Type\n");
+        printf("2.) Record ID\n");
+        printf("3.) Timestamp\n");
+        printf("4.) Officer\n");
+        printf("5.) Action Description\n");
+        printf("6.) QUIT\n");
+        char buffer[4];
+        printf("> Enter your choice: ");
+        fgets(buffer, sizeof(buffer), stdin);
+        int buf = atoi(buffer);
+
+        switch (buf)
+        {
+            case 1:
+                char action_type[50];
+                printf("> Enter your new action type: ");
+                fgets(action_type, sizeof(action_type), stdin);
+                action_type[strcspn(action_type, "\n")] = 0;
+                strcpy(log->actionType, action_type);
+                break;
+            case 2:
+                char record_id[10];
+                printf("> Enter your new record ID: ");
+                fgets(record_id, sizeof(record_id), stdin);
+                record_id[strcspn(record_id, "\n")] = 0;
+                strcpy(log->record_id, record_id);
+                break;
+            case 3:
+                char timestamp[20];
+                printf("> Enter your new timestamp: ");
+                fgets(timestamp, sizeof(timestamp), stdin);
+                timestamp[strcspn(timestamp, "\n")] = 0;
+                strcpy(log->timestamp, timestamp);
+                break;
+            case 4:
+                char officer_id[20];
+                printf("> Enter the Officer ID: ");
+                fgets(officer_id, sizeof(officer_id), stdin);
+                officer_id[strcspn(officer_id, "\n")] = 0;
+                Officer *officer = check_officer(sntrph, officer_id);
+                log->officer = officer;
+            case 5:
+               char action_description[200];
+                printf("> Enter your new action description: ");
+                fgets(action_description, sizeof(action_description), stdin);
+                action_description[strcspn(action_description, "\n")] = 0;
+                strcpy(log->action_description, action_description);
+                break;
+            case 6:
+                editing = false;
+                break;
+        }
+    }
+}
+
+void editPerson(SNTRPH *sntrph, char *token){
+    Person *person = check_person(sntrph, token);
+    bool editing = true;
+    while(editing){
+        printf("\n--------------------------------------------------\n");
+        printf("            INFORMATION ALTERING SYSTEM - PERSON\n");
+        printf("--------------------------------------------------\n");
+        printf("1.) First Name\n");
+        printf("2.) Last Name\n");
+        printf("3.) Criminal Record\n");
+        printf("4.) Relationship Status\n");
+        printf("5.) Date of birth\n");
+        printf("6.) Status\n");
+        printf("7.) QUIT\n");
+        char buffer[4];
+        printf("> Enter your choice: ");
+        fgets(buffer, sizeof(buffer), stdin);
+        int buf = atoi(buffer);
+
+        switch (buf)
+        {
+        case 1:
+            printf("> Enter the new first name: ");
+            char first_name[50];
+            fgets(first_name, sizeof(first_name), stdin);
+            first_name[strcspn(first_name, "\n")] = '\0';
+            strcpy(person->first_name, first_name);
+            break;
+        case 2:
+            printf("> Enter the new last name: ");
+            char last_name[50];
+            fgets(last_name, sizeof(last_name), stdin);
+            last_name[strcspn(last_name, "\n")] = '\0';
+            strcpy(person->last_name, last_name);
+            break;
+        case 3:
+            printf("> Enter the new criminal record: ");
+            char criminal_record[500];
+            fgets(criminal_record, sizeof(criminal_record), stdin);
+            criminal_record[strcspn(criminal_record, "\n")] = '\0';
+            strcpy(person->criminal_record, criminal_record);
+            break;
+        case 4:
+            printf("> Enter the new relationship status");
+            char relationship_status[50];
+            fgets(relationship_status, sizeof(relationship_status), stdin);
+            relationship_status[strcspn(relationship_status, "\n")] = '\0';
+            strcpy(person->relationship_status, relationship_status);
+            break;
+        case 5:
+            printf("> Enter the new DOB:");
+            char DOB[20];
+            fgets(DOB, sizeof(DOB), stdin);
+            DOB[strcspn(DOB, "\n")] = '\0';
+            strcpy(person->DOB, DOB);
+            break;
+        case 6:
+            printf("> Enter the new status; ");
+            char status[50];
+            fgets(status, sizeof(status), stdin);
+            status[strcspn(status, "\n")] = '\0';
+            strcpy(person->status, status);
+            break;
+        case 7:
+            char date[15];
+            get_current_date(date);
+
+            char officer_name[120];
+            snprintf(officer_name, sizeof(officer_name), "%s %s %s", sntrph->current_user->title, sntrph->current_user->base->first_name, sntrph->current_user->base->last_name);
+
+            char editperson[120];
+            snprintf(editperson, sizeof(editperson), "%s %s",  person->first_name, person->last_name);
+
+            char description[200];
+            snprintf(description, sizeof(description), "%s ALTERED %s's PERSON PROFILE ON %s", officer_name, editperson, date);
+            addLog(sntrph, "PERSON ALTERATION", person->person_id, sntrph->current_user, description);
+            PrintLine("Quitting...");
+            PrintLine("--------------------------------------------------");
+            editing = false;
+            break;
+        }
+    }
+}
+
+void editAddress(SNTRPH *sntrph, char *token){
+    
+}
 
 void addDisciplinary(SNTRPH *sntrph, char *token)
 {
+    printf("[CHECKPOINT 1] Entered addDisciplinary\n");
+
+    if (sntrph == NULL)
+    {
+        printf("[ERROR] sntrph is NULL\n");
+        return;
+    }
+    if (sntrph->current_user == NULL)
+    {
+        printf("[ERROR] current_user is NULL\n");
+        return;
+    }
+
     if (sntrph->current_user->clearance < 3)
     {
+        printf("[CHECKPOINT 2] Access denied due to insufficient clearance\n");
         PrintLine("ACCESS DENIED: INSUFFICIENT CLEARANCE\n");
         PrintLine("!ATTEMPT FOLLOWED IN AUDIT TRAIL!!");
+
         char date[15];
         get_current_date(date);
+
+        if (sntrph->current_user->base == NULL)
+        {
+            printf("[ERROR] current_user->base is NULL\n");
+            return;
+        }
+
         char officer_name[120];
-        snprintf(officer_name, sizeof(officer_name), "%s %s %s", sntrph->current_user->title, sntrph->current_user->base->first_name, sntrph->current_user->base->last_name);
+        snprintf(officer_name, sizeof(officer_name), "%s %s %s",
+                 sntrph->current_user->title,
+                 sntrph->current_user->base->first_name,
+                 sntrph->current_user->base->last_name);
+
         char description[200];
         snprintf(description, sizeof(description), "%s ATTEMPTED TO ADD A DISCIPLINARY ON %s", officer_name, date);
+
         addLog(sntrph, "DISCIPLINARY ADDITION ATTEMPT", token, sntrph->current_user, description);
         return;
     }
+
+    printf("[CHECKPOINT 3] Clearance sufficient, checking officer\n");
+
     Officer *officer = check_officer(sntrph, token);
+    if (officer == NULL)
+    {
+        printf("[ERROR] Officer not found for token: %s\n", token);
+        return;
+    }
+
+    printf("[CHECKPOINT 4] Officer found, allocating disciplinary action\n");
+
     DisciplinaryAction *da = malloc(sizeof(DisciplinaryAction));
+    if (da == NULL)
+    {
+        printf("[ERROR] Memory allocation failed for DisciplinaryAction\n");
+        return;
+    }
+
     char d_id[10];
     char date[15];
+
     for (int i = 0; i < 3; i++)
     {
         if (officer->disciplinary_actions[i] == NULL)
         {
+            printf("[CHECKPOINT 5] Found empty slot at index %d\n", i);
+
             snprintf(d_id, sizeof(d_id), "D00%d", i);
             strcpy(da->d_id, d_id);
             da->officer = officer;
+
             get_current_date(date);
             strcpy(da->date, date);
+
             char summary[200];
-            printf("> Enter the summary of the disciplinary.");
+            printf("> Enter the summary of the disciplinary.\n");
             fgets(summary, sizeof(summary), stdin);
+
             char severity[5];
-            printf("> Enter the severity of the disciplinary.");
+            printf("> Enter the severity of the disciplinary.\n");
             fgets(severity, sizeof(severity), stdin);
             int severity_int = atoi(severity);
 
@@ -1059,11 +1521,31 @@ void addDisciplinary(SNTRPH *sntrph, char *token)
 
             officer->disciplinary_actions[i] = da;
             printf("[✓] DISCIPLINARY ADDED: %s \n", da->d_id);
+            char date[15];
+        get_current_date(date);
+
+        char officer_name[120];
+        snprintf(officer_name, sizeof(officer_name), "%s %s %s",
+                 sntrph->current_user->title,
+                 sntrph->current_user->base->first_name,
+                 sntrph->current_user->base->last_name);
+                         char badofficer[120];
+        snprintf(badofficer, sizeof(badofficer), "%s %s %s",
+                 officer->title,
+                 officer->base->first_name,
+                 officer->base->last_name);
+
+        char description[200];
+        snprintf(description, sizeof(description), "%s ADDED A DISCIPLINARY TO %s's OFFICER PROFILE ON %s", officer_name,badofficer, date);
+
+        addLog(sntrph, "DISCIPLINARY ADDITION", token, sntrph->current_user, description);
             return;
         }
     }
+
+    printf("[CHECKPOINT 6] No available slots for disciplinary actions\n");
 }
-// Function to generate a random string from an array of names
+
 const char *random_name(const char *names[], int name_count)
 {
     return names[random_int(0, name_count - 1)];
@@ -1105,7 +1587,6 @@ void random_address(char *street, char *city, char *zip_code)
     snprintf(zip_code, 128, "%s", zip);                               // Random ZIP code
 }
 
-// Helper function to seed multiple officers automatically
 void seed_officers(int count, SNTRPH *sntrph)
 {
     // Example random first and last names
@@ -1272,12 +1753,17 @@ void processCommand(SNTRPH *sntrph, char *input)
         {
             addEvidence(sntrph);
         }
-        if (strcmp(token_2, "ADOPTION_REPORT") == 0)
+        else if (strcmp(token_2, "ADOPTION_REPORT") == 0)
         {
         }
-        if (strcmp(token_2, "OFFICER") == 0)
+        else if (strcmp(token_2, "OFFICER") == 0)
         {
             addOfficer_Input(sntrph);
+        }
+        else if (strcmp(token_2, "DISCIPLINARY") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            addDisciplinary(sntrph, token_3);
         }
     }
     else if (strcmp(token, "DELETE") == 0)
@@ -1302,6 +1788,15 @@ void processCommand(SNTRPH *sntrph, char *input)
             get_current_date(date);
             snprintf(description, sizeof(description), "%s FOLLOWED THE AUDIT TRAIL ON %s", officer_name, date);
             addLog(sntrph, "AUDIT TRAIL FOLLOWED", "", sntrph->current_user, description);
+        }
+    }
+    else if (strcmp(token, "EDIT") == 0)
+    {
+        char *token_2 = strtok(NULL, delimiters);
+        if (strcmp(token_2, "OFFICER") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            editOfficer(sntrph, token_3);
         }
     }
 }
@@ -1399,7 +1894,7 @@ int main()
     char input[50];
     while (true)
     {
-        printf("\n> Enter command:");
+        printf("\n> Enter command: ");
         fgets(input, sizeof(input), stdin);
         size_t length = strlen(input);
         if (length < 4)
