@@ -60,6 +60,7 @@ int main(void)
     DialogueTree test_event_2;
     EMSEvent TTE1;
     EMSEvent TTE2;
+    SNTRPH sntrph;
 
     welcomeMessage();
     initialiseRoom(&lobby, "Lobby", "The police station lobby is a bustling, starkly lit room with a sleek front desk, worn-out chairs, and walls adorned with crime prevention posters and a large, imposing emblem of justice.", "");
@@ -77,7 +78,8 @@ int main(void)
 
     initialiseItemLookup(&ItemCO);
     initialiseCFLookup(&CFCO);
-    initialiseCase(&casefileno1, "The Campside Kidnapping", "C037992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1968, Michael O\'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents\' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Victim Information:\nName: Michael O\'Connell\nAge: 4\nOccupation: N/A\nPhysical Description:\n\tHeight: 3\"4\n\tWeight: 40lbs\n\tHair: Brown, buzzed\n\tEyes: Green\n\tDistinguishing Features:\n\t\tScar through his right eyebrow\nLast Known Whereabouts:\n\tLocation: 200m north west of Rigewood National Park\'s main entrance\n\tTime: 2200, 23/03/1978", "Location: Ridgewood", "Evidence:\n\tLarge adult sized footprints found leading from the tent toward the rear entrance.\n\tSuspicious Activity:\n\t\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\t\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\t\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\n\tSearch Efforts:\n\t\tSearh teams combed through the park over the span of 3 days.\n\t\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Primary Suspect:\n\tFormer felon- Alfred Zimmerman");
+    initialiseCase(&casefileno1,"The Campside Kidnapping", "C037992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1968, Michael O'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Large adult sized footprints found leading from the tent toward the rear entrance.\nSuspicious Activity:\n\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\nSearch Efforts:\n\tSearch teams combed through the park over the span of 3 days.\n\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Open", "MISSING", false);
+
     addCFToLookup(&CFCO, &casefileno1);
 
     initialiseItem(&ID, "ID", false, "Your detective ID, worn and slightly frayed, shows your stern photo, name, badge number, and department logo, all in a weathered leather wallet.", &ItemCO, false);
@@ -160,7 +162,7 @@ int main(void)
         }
         else
         {
-            processCommand(&ems, res, &detective, &ItemCO, &CFCO);
+            processCommand(&ems, res, &detective, &ItemCO, &CFCO, &sntrph);
         }
     }
     free(inventory.items);

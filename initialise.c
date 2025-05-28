@@ -41,17 +41,30 @@ void initialiseDialogue(DialogueTree *root, Character *speaker, char *text, Dial
 void initialiseJournal(Journal *journal) {
     journal->size = 0; journal->capacity = 1; journal->events = (Event *)malloc(journal->capacity * sizeof(Event)); }
 
-void initialiseCase(CaseFile *case_file,char *name,char *case_no,char *date, char *lead, char *summary, char *victims, char *location, char *evidence, char *suspects){
+void initialiseCase(CaseFile *case_file,
+                         const char *name,
+                         const char *case_no,
+                         const char *date,
+                         const char *lead,
+                         const char *summary,
+                         const char *evidence_notes,
+                         const char *status, const char *type,
+                         bool is_locked)
+{
+    strcpy(case_file->name, name);
+    strcpy(case_file->case_no, case_no);
+    strcpy(case_file->date, date);
+    strcpy(case_file->lead, lead);
+    strcpy(case_file->summary, summary);
+    strcpy(case_file->evidence_notes, evidence_notes);
+    strcpy(case_file->status, status);
+    strcpy(case_file->type, type);
+    case_file->is_locked = is_locked;
 
-strcpy(case_file->name, name);
-strcpy(case_file->case_no, case_no);
-strcpy(case_file->date, date);
-strcpy(case_file->lead, lead);
-strcpy(case_file->location, location);
-strcpy(case_file->summary, summary);
-strcpy(case_file->victims, victims);
-strcpy(case_file->evidence, evidence);
-strcpy(case_file->suspects, suspects);
+    case_file->victim_count = 0;
+    case_file->suspect_count = 0;
+    case_file->evidence_count = 0;
+    case_file->location = NULL;
 }
 
 void initialiseItemLookup(ItemCollection *itemList) {

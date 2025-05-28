@@ -19,153 +19,21 @@
 #define MAX_AR 50
 #define MAX_EV 50
 #define MAX_PASSWORD_LENGTH 64
+#define PAGE_SIZE 10
 
-typedef struct SNTRPH SNTRPH;
-typedef struct Address Address;
-typedef struct Person Person;
-typedef struct ModificationLog ModificationLog;
-typedef struct AdoptionReport AdoptionReport;
-typedef struct Evidence Evidence;
-typedef struct AuditLog AuditLog;
-typedef struct DisciplinaryAction DisciplinaryAction;
-typedef struct Officer Officer;
-typedef struct EvidenceArchive EvidenceArchive;
-typedef struct AddressList AddressList;
-typedef struct PersonList PersonList;
-typedef struct ReportList ReportList;
-typedef struct LogList LogList;
-typedef struct OfficerList OfficerList;
-typedef struct GBOX GBOX;
-typedef struct GMessage GMessage;
 
-struct Address
-{
-    char address_id[10];
-    char street[MAX_ADDRESS_LENGTH];
-    char city[MAX_ADDRESS_LENGTH];
-    char zip_code[MAX_ADDRESS_LENGTH];
-    char case_no[20][20];
-    Person *person_list[10];
-    int person_count;
-};
-struct GBOX
-{
-    GMessage *messages[100];
-    int message_count;
-};
-struct AddressList
-{
-    Address *addresses[MAX_ADDRESSES];
-    int address_count;
-};
-struct Person
-{
-    char person_id[10];
-    char first_name[MAX_NAME_LENGTH];
-    char last_name[MAX_NAME_LENGTH];
-    Address *address;
-    char criminal_record[500];
-    char relationship_status[50];
-    char DOB[20];
-    char status[50];
-};
-struct PersonList
-{
-    Person *person_list[MAX_PERSONS];
-    int person_count;
-};
-struct AdoptionReport
-{
-    char report_id[20];
-    Person *child;
-    Person *adoptive_parents[2];
-    Person *original_parents[2];
-    char adoption_notes[300];
-};
-struct ReportList
-{
-    AdoptionReport *reports[MAX_AR];
-    int report_count;
-};
-struct Evidence
-{
-    char evidence_id[10];
-    char name[50];
-    char status[20];
-    char type[50];
-    char case_id[10];
-    char description[500];
-    char file_path[50];
-    char date[20];
-    char custody_chain[5][50];
-    bool is_restricted;
-    char notes[100];
-};
-struct EvidenceArchive
-{
-    Evidence *evidence_items[MAX_EV];
-    int total_items;
-};
-struct AuditLog
-{
-    char audit_id[10];
-    char actionType[50];
-    char record_id[10];
-    char timestamp[20];
-    Officer *officer;
-    char action_description[200];
-};
-struct LogList
-{
-    AuditLog *logs[MAX_ADDRESSES];
-    int log_count;
-};
-struct DisciplinaryAction
-{
-    char d_id[10];
-    Officer *officer;
-    char date[20];
-    char summary[200];
-    int severity;
-};
-struct Officer
-{
-    char officer_id[20];
-    char title[20];
-    char username[50];
-    char password[50];
-    Person *base;
-    char b_no[20];
-    int clearance;
-    DisciplinaryAction *disciplinary_actions[3];
-    GBOX *mailbox;
-};
-struct OfficerList
-{
-    Officer *officers[MAX_ADDRESSES];
-    int officer_count;
-};
-struct SNTRPH
-{
-    PersonList personlist;
-    AddressList addressList;
-    EvidenceArchive evidenceArchive;
-    ReportList reportList;
-    LogList logList;
-    OfficerList officerList;
-    Officer *current_user;
-};
-struct GMessage
-{
-    Officer *sender;
-    Officer *recipient;
-    char subject[100];
-    char timestamp[30];
-    int clearance;
-    char body[1000];
-    bool read;
-};
+char *strstr_w(const char *first, const char *sec) {
+    size_t sec_len = strlen(sec);
+    if (sec_len == 0)
+        return (char *)first;
 
+    for (; *first; first++) {
+        if (_strnicmp(first, sec, sec_len) == 0) {
+            return (char *)first;
+        }
+    }
+    return NULL;
+}
 void increment_id(char *id_string)
 {
     int length = strlen(id_string);
@@ -258,7 +126,6 @@ void addEvidence(SNTRPH *sntrph)
     char desc[500];
     char file_path[50];
     char date[20];
-    char custody_chain[5][50];
     bool is_restricted;
     char notes[100];
     Evidence *ev = malloc(sizeof(Evidence));
@@ -278,18 +145,25 @@ void addEvidence(SNTRPH *sntrph)
     }
     printf("> Enter the name of your evidence: ");
     fgets(name, sizeof(name), stdin);
+    name[strcspn(name, "\n")] = 0;
     printf("> Enter the status of your evidence: ");
     fgets(status, sizeof(status), stdin);
+    status[strcspn(status, "\n")] = 0;
     printf("> Enter the type of your evidence: ");
     fgets(type, sizeof(type), stdin);
+    type[strcspn(type, "\n")] = 0;
     printf("> Enter the case ID of your evidence: ");
     fgets(case_id, sizeof(case_id), stdin);
+    case_id[strcspn(case_id, "\n")] = 0;
     printf("> Enter the description of your evidence: ");
     fgets(desc, sizeof(desc), stdin);
+    desc[strcspn(desc, "\n")] = 0;
     printf("> Enter the file path of your evidence: ");
     fgets(file_path, sizeof(file_path), stdin);
+    file_path[strcspn(file_path, "\n")] = 0;
     printf("> Enter any notes on your evidence: ");
     fgets(notes, sizeof(notes), stdin);
+    desc[strcspn(desc, "\n")] = 0;
     for (int i = 0; i < 5; i++)
     {
         char buffer[50];
@@ -302,7 +176,7 @@ void addEvidence(SNTRPH *sntrph)
             PrintLine("Exiting...");
             break;
         }
-        strcpy(custody_chain[i], buffer);
+        strcpy(ev->custody_chain[i], buffer);
     }
     ev->is_restricted = false;
     strcpy(ev->name, name);
@@ -340,11 +214,12 @@ void deleteEvidence(SNTRPH *sntrph, const char *evidence_id_to_delete)
             if (sntrph->current_user->clearance < 3)
             {
                 PrintLine("ACCESS DENIED: INSUFFICIENT CLEARANCE\n");
-                PrintLine("!ATTEMPT FOLLOWED IN AUDIT TRAIL!!");
+                PrintLine("!! ATTEMPT FOLLOWED IN AUDIT TRAIL !!");
 
                 char description[200];
                 snprintf(description, sizeof(description), "%s ATTEMPTED TO DELETE EVIDENCE: %s ON %s", officer_name, sntrph->evidenceArchive.evidence_items[i]->evidence_id, date);
                 addLog(sntrph, "EVIDENCE DELETION ATTEMPT", sntrph->evidenceArchive.evidence_items[i]->evidence_id, sntrph->current_user, description);
+                return;
             }
             // Print confirmation message
             char confirmation[50];
@@ -358,7 +233,7 @@ void deleteEvidence(SNTRPH *sntrph, const char *evidence_id_to_delete)
             }
 
             char description[200];
-            snprintf(description, sizeof(description), "%s DELETED EVIDENCE: %s ON %s", officer_name, sntrph->evidenceArchive.evidence_items[i]->evidence_id, date);
+            snprintf(description, sizeof(description), "%s DELETED EVIDENCE: %s ON %s", officer_name, evidence_id_to_delete, date);
             // Decrease the total item count
             sntrph->evidenceArchive.total_items--;
             addLog(sntrph, "EVIDENCE DELETION", sntrph->evidenceArchive.evidence_items[i]->evidence_id, sntrph->current_user, description);
@@ -370,21 +245,40 @@ void deleteEvidence(SNTRPH *sntrph, const char *evidence_id_to_delete)
     // If no matching evidence was found
     if (!found)
     {
-        PrintLine("> No evidence found with the given ID.");
+        PrintLine("!! NO RECORD FOUND WITH THE GIVEN <ID> !!");
     }
 }
 
 void printEvidence(Evidence *ev)
 {
+    if (strcmp(ev->file_path, "") == 0)
+    {
+        strcpy(ev->file_path, "No file path assigned.");
+    }
+    else
+    {
+        // Remove newline character from file_path if it exists
+        size_t len = strlen(ev->file_path);
+        if (len > 0 && ev->file_path[len - 1] == '\n')
+        {
+            ev->file_path[len - 1] = '\0';
+        }
+        char file_path[100];
+        snprintf(file_path, sizeof(file_path), "C:/Users/hannan.baane/echoesoftheforgotten/images/%s", ev->file_path);
+        char command[150];
+        snprintf(command, sizeof(command), "start %s", file_path);
+        system(command); // Open the file path in the default application
+    }
     printf("--------------------------------------------------\n");
     printf("             EVIDENCE RECORD DISPLAY\n");
     printf("--------------------------------------------------\n\n");
 
     printf("EVIDENCE ID:        %s\n", ev->evidence_id);
+    printf("CASE ID:            %s\n", ev->case_id);
+    printf("\n--------------------------------------------------\n");
     printf("NAME:               %s\n", ev->name);
     printf("TYPE:               %s\n", ev->type);
     printf("STATUS:             %s\n", ev->status);
-    printf("CASE ID:            %s\n", ev->case_id);
     printf("DATE LOGGED:        %s\n", ev->date);
     printf("FILE PATH:          %s\n", ev->file_path);
     printf("RESTRICTED ACCESS:  %s\n", ev->is_restricted ? "Yes" : "No");
@@ -396,10 +290,11 @@ void printEvidence(Evidence *ev)
     printf("\nCUSTODY CHAIN:\n");
     for (int i = 0; i < 5; i++)
     {
-        if (ev->custody_chain[i][0] != '\0')
+        if (strcmp(ev->custody_chain[i], "") == 0)
         {
-            printf("  - %s\n", ev->custody_chain[i]);
+            break;
         }
+        printf("  - %s\n", ev->custody_chain[i]);
     }
 
     if (ev->notes[0] != '\0')
@@ -416,6 +311,128 @@ void printEvidence(Evidence *ev)
         ;      // clear stdin
     getchar(); // wait for actual key press
 }
+
+void deletePerson(SNTRPH *sntrph, char *person_id)
+{
+    bool found = false;
+    char date[15];
+    get_current_date(date);
+
+    for (int i = 0; i < sntrph->personlist.person_count; i++)
+    {
+        char officer_name[120];
+        snprintf(officer_name, sizeof(officer_name), "%s %s %s", sntrph->current_user->title, sntrph->current_user->base->first_name, sntrph->current_user->base->last_name);
+        if (strcmp(person_id, sntrph->personlist.person_list[i]->person_id) == 0)
+        {
+            found = true;
+            if (sntrph->current_user->clearance < 3)
+            {
+                PrintLine("ACCESS DENIED: INSUFFICIENT CLEARANCE\n");
+                PrintLine("!! ATTEMPT FOLLOWED IN AUDIT TRAIL !!");
+
+                char description[200];
+                snprintf(description, sizeof(description), "%s ATTEMPTED TO DELETE PERSON ENTRY: %s ON %s", person_id, date);
+                addLog(sntrph, "PERSON ENTRY DELETION ATTEMPT", person_id, sntrph->current_user, description);
+                return;
+            }
+            for (int j = i; j < sntrph->personlist.person_count - 1; j++)
+            {
+                sntrph->personlist.person_list[j] = sntrph->personlist.person_list[j + 1];
+            }
+            // Decrease the total item count
+            sntrph->personlist.person_count--;
+            char confirmation[50];
+            snprintf(confirmation, sizeof(confirmation), "[✓] DELETED A PERSON RECORD: <%s>", person_id);
+            PrintLine(confirmation);
+
+            char description[200];
+            snprintf(description, sizeof(description), "%s DELETED A PERSON RECORD: %s ON %s", officer_name, person_id, date);
+            addLog(sntrph, "RECORD DELETION", person_id, sntrph->current_user, description);
+            break;
+        }
+        // Person 59, ID: <P061>, Danielle Kelly | ALIVE
+    }
+    if (!found)
+    {
+        PrintLine("!! NO RECORD FOUND WITH THE GIVEN <ID> !!");
+    }
+}
+
+void deleteAddress(SNTRPH *sntrph, char *add_id)
+{
+    bool found = false;
+    char date[15];
+    get_current_date(date);
+
+    char officer_name[120];
+    snprintf(officer_name, sizeof(officer_name), "%s %s %s",
+             sntrph->current_user->title,
+             sntrph->current_user->base->first_name,
+             sntrph->current_user->base->last_name);
+
+    // Check person list for matching address and remove link
+    for (int i = 0; i < sntrph->personlist.person_count; i++)
+    {
+        if (sntrph->personlist.person_list[i]->address &&
+            strcmp(add_id, sntrph->personlist.person_list[i]->address->address_id) == 0)
+        {
+
+            found = true;
+
+            if (sntrph->current_user->clearance < 3)
+            {
+                PrintLine("ACCESS DENIED: INSUFFICIENT CLEARANCE\n");
+                PrintLine("!! ATTEMPT FOLLOWED IN AUDIT TRAIL !!");
+
+                char description[200];
+                snprintf(description, sizeof(description),
+                         "%s ATTEMPTED TO DELETE ADDRESS ENTRY ON %s",
+                         officer_name, date);
+                addLog(sntrph, "ADDRESS ENTRY DELETION ATTEMPT", add_id,
+                       sntrph->current_user, description);
+                return;
+            }
+
+            sntrph->personlist.person_list[i]->address = NULL;
+        }
+    }
+
+    // Remove from address list
+    for (int i = 0; i < sntrph->addressList.address_count; i++)
+    {
+        if (strcmp(add_id, sntrph->addressList.addresses[i]->address_id) == 0)
+        {
+            found = true;
+
+            for (int j = i; j < sntrph->addressList.address_count - 1; j++)
+            {
+                sntrph->addressList.addresses[j] = sntrph->addressList.addresses[j + 1];
+            }
+
+            sntrph->addressList.address_count--;
+
+            char confirmation[50];
+            snprintf(confirmation, sizeof(confirmation),
+                     "[✓] DELETED AN ADDRESS RECORD: <%s>", add_id);
+            PrintLine(confirmation);
+
+            char description[200];
+            snprintf(description, sizeof(description),
+                     "%s DELETED AN ADDRESS RECORD: %s ON %s",
+                     officer_name, add_id, date);
+            addLog(sntrph, "RECORD DELETION", add_id,
+                   sntrph->current_user, description);
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        PrintLine("!! NO RECORD FOUND WITH THE GIVEN <ID> !!");
+    }
+}
+
+
 int random_int(int min, int max)
 {
     return min + rand() % (max - min + 1);
@@ -434,7 +451,9 @@ void viewOfficer(Officer *off)
     printf("--------------------------------------------------\n\n");
     printf("CRIMINAL REC:        %s\n", off->base->criminal_record);
     printf("ADDRESS:        %s, %s, %s\n", off->base->address->street, off->base->address->city, off->base->address->zip_code);
-    printf("STATUS:        %s\n", off->base->address);
+    printf("--------------------------------------------------\n\n");
+    printf("RELATIONSHIP STATUS:        %s\n", off->base->relationship_status);
+    printf("STATUS:        %s\n", off->base->status);
     printf("--------------------------------------------------\n\n");
     if (off->disciplinary_actions[0] != NULL)
     {
@@ -451,28 +470,308 @@ void viewOfficer(Officer *off)
     getchar();
 }
 
-void viewOfficers(SNTRPH *sntrph)
+void viewPerson(Person *person)
+{
+
+    printf("--------------------------------------------------\n");
+    printf("           SAINT-RAPHAEL PERSON TRAIL VIEW\n");
+    printf("--------------------------------------------------\n\n");
+
+    printf("ID:        %s\n", person->person_id);
+    printf("FIRST NAME:        %s\n", person->first_name);
+    printf("LAST NAME:        %s\n", person->last_name);
+    printf("--------------------------------------------------\n\n");
+    printf("DOB:        %s\n", person->DOB);
+    printf("RELATIONSHIP STATUS:        %s\n", person->relationship_status);
+    printf("CRIMINAL RECORD:        %s\n", person->criminal_record);
+    printf("--------------------------------------------------\n\n");
+    printf("STATUS:        %s\n", person->status);
+    if (person->address != NULL)
+    {
+        printf("ADDRESS:        %s, %s, %s\n", person->address->street, person->address->city, person->address->zip_code);
+    }
+    else
+    {
+        printf("ADDRESS:        No address assigned.\n");
+    }
+    printf("--------------------------------------------------\n");
+    printf("[Press Enter to EXIT]\n");
+    getchar();
+}
+void viewAddress(Address *address)
 {
     printf("--------------------------------------------------\n");
-    printf("           SAINT-RAPHAEL OFFICERS TRAIL VIEW\n");
+    printf("           SAINT-RAPHAEL ADDRESS TRAIL VIEW\n");
     printf("--------------------------------------------------\n\n");
-    for (int i = 0; i < sntrph->officerList.officer_count; i++)
-    {
-        char officer_name[120];
-        snprintf(officer_name, sizeof(officer_name), "%s %s %s",
-                 sntrph->officerList.officers[i]->title,
-                 sntrph->officerList.officers[i]->base->first_name,
-                 sntrph->officerList.officers[i]->base->last_name);
-        printf("Officer %d, ID: <%s>, %s\n", i + 1, sntrph->officerList.officers[i]->b_no, officer_name);
-    }
-    printf("--------------------------------------------------\n\n");
-    printf("> Enter the number of an officer you'd like to have a more detailed view on: ");
 
-    char choice[10];
-    fgets(choice, sizeof(choice), stdin);
-    int choice_int = atoi(choice) - 1;
-    viewOfficer(sntrph->officerList.officers[choice_int]);
+    printf("ID:          %s\n", address->address_id);
+    printf("STREET:      %s\n", address->street);
+    printf("CITY:        %s\n", address->city);
+    printf("ZIP CODE:    %s\n", address->zip_code);
+
+    printf("--------------------------------------------------\n\n");
+
+    // Print linked residents
+    printf("RESIDENTS (%d):\n", address->person_count);
+    if (address->person_count == 0)
+    {
+        printf("  None assigned.\n");
+    }
+    else
+    {
+        for (int i = 0; i < address->person_count; i++)
+        {
+            Person *resident = address->person_list[i];
+            printf("  - %s %s (ID: %s)\n", resident->first_name, resident->last_name, resident->person_id);
+        }
+    }
+
+    printf("--------------------------------------------------\n\n");
+
+    // Print linked cases (assuming address->case_no is an array of strings)
+    printf("LINKED CASES:\n");
+    int cases_found = 0;
+    for (int i = 0; i < 20; i++)
+    {
+        if (address->case_no[i][0] != '\0')
+        {
+            printf("  - %s\n", address->case_no[i]);
+            cases_found++;
+        }
+    }
+    if (cases_found == 0)
+    {
+        printf("  No linked cases.\n");
+    }
+
+    printf("--------------------------------------------------\n");
+    printf("[Press Enter to EXIT]\n");
+    getchar();
 }
+
+void viewPeople(SNTRPH *sntrph)
+{
+    int person_count = sntrph->personlist.person_count;
+    int page = 0;
+    int total_pages = (person_count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while (1)
+    {
+        system("cls"); // Use "clear" if you're on Unix
+
+        printf("--------------------------------------------------\n");
+        printf("           SAINT-RAPHAEL PERSON TRAIL VIEW\n");
+        printf("--------------------------------------------------\n\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > person_count)
+            end = person_count;
+
+        for (int i = start; i < end; i++)
+        {
+            Person *person = sntrph->personlist.person_list[i];
+            printf("Person %d, ID: <%s>, %s %s | %s\n",
+                   i + 1,
+                   person->person_id,
+                   person->first_name,
+                   person->last_name, person->status);
+        }
+
+        printf("--------------------------------------------------\n\n");
+        printf("[n] Next | [p] Prev | [q] Quit | [1-%d] View person\n> ", person_count);
+
+        fgets(input, sizeof(input), stdin);
+
+        if (tolower(input[0]) == 'q')
+        {
+            break;
+        }
+        else if (tolower(input[0]) == 'n' && page < total_pages - 1)
+        {
+            page++;
+        }
+        else if (tolower(input[0]) == 'p' && page > 0)
+        {
+            page--;
+        }
+        else
+        {
+            int choice_int = atoi(input);
+            if (choice_int > 0 && choice_int <= person_count)
+            {
+                viewPerson(sntrph->personlist.person_list[choice_int - 1]);
+            }
+        }
+    }
+}
+
+void viewEvidence(SNTRPH *sntrph)
+{
+    int ev_count = sntrph->evidenceArchive.total_items;
+    int page = 0;
+    int total_pages = (ev_count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while (1)
+    {
+        system("cls");
+        printf("--------------------------------------------------\n");
+        printf("           SAINT-RAPHAEL EVIDENCE ARCHIVE VIEW\n");
+        printf("--------------------------------------------------\n\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > ev_count)
+        {
+            end = ev_count;
+        }
+        for (int i = start; i < end; i++)
+        {
+            Evidence *ev = sntrph->evidenceArchive.evidence_items[i];
+            printf("Evidence %d, ID: <%s>, %s, %s | %s\n", i + 1, ev->evidence_id, ev->name, ev->type, ev->status);
+        }
+        printf("--------------------------------------------------\n\n");
+        printf("[n] Next | [p] Prev | [q] Quit | [1-%d] View evidence\n> ", ev_count);
+
+        fgets(input, sizeof(input), stdin);
+        if (tolower(input[0]) == 'q')
+        {
+            break;
+        }
+        else if (tolower(input[0]) == 'n' && page < total_pages - 1)
+        {
+            page++;
+        }
+        else if (tolower(input[0]) == 'p' && page > 0)
+        {
+            page--;
+        }
+        else
+        {
+            int choice_int = atoi(input);
+            if (choice_int > 0 && choice_int <= ev_count)
+            {
+                printEvidence(sntrph->evidenceArchive.evidence_items[choice_int - 1]);
+            }
+        }
+    }
+}
+
+void viewAddresses(SNTRPH *sntrph)
+{
+    int address_count = sntrph->addressList.address_count;
+    int page = 0;
+    int total_pages = (address_count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while (1)
+    {
+        system("cls");
+        printf("--------------------------------------------------\n");
+        printf("           SAINT-RAPHAEL ADDRESS TRAIL VIEW\n");
+        printf("--------------------------------------------------\n\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > address_count)
+        {
+            end = address_count;
+        }
+        for (int i = start; i < end; i++)
+        {
+            Address *address = sntrph->addressList.addresses[i];
+            printf("Address %d, ID: <%s>, %s, %s, %s | %d\n", i + 1, address->address_id, address->street, address->city, address->zip_code, address->person_count);
+        }
+        printf("--------------------------------------------------\n\n");
+        printf("[n] Next | [p] Prev | [q] Quit | [1-%d] View address\n> ", address_count);
+        fgets(input, sizeof(input), stdin);
+
+        if (tolower(input[0]) == 'q')
+        {
+            break;
+        }
+        else if (tolower(input[0]) == 'n' && page < total_pages - 1)
+        {
+            page++;
+        }
+        else if (tolower(input[0]) == 'p' && page > 0)
+        {
+            page--;
+        }
+        else
+        {
+            int choice_int = atoi(input);
+            if (choice_int > 0 && choice_int <= address_count)
+            {
+                viewAddress(sntrph->addressList.addresses[choice_int - 1]);
+            }
+        }
+    }
+}
+void viewOfficers(SNTRPH *sntrph)
+{
+    int officer_count = sntrph->officerList.officer_count;
+    int page = 0;
+    int total_pages = (officer_count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while (1)
+    {
+        system("cls"); // or use "clear" on Unix-like systems
+
+        printf("--------------------------------------------------\n");
+        printf("           SAINT-RAPHAEL OFFICERS TRAIL VIEW\n");
+        printf("--------------------------------------------------\n\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > officer_count)
+            end = officer_count;
+
+        for (int i = start; i < end; i++)
+        {
+            char officer_name[120];
+            snprintf(officer_name, sizeof(officer_name), "%s %s %s",
+                     sntrph->officerList.officers[i]->title,
+                     sntrph->officerList.officers[i]->base->first_name,
+                     sntrph->officerList.officers[i]->base->last_name);
+
+            printf("Officer %d, ID: <%s>, %s\n",
+                   i + 1,
+                   sntrph->officerList.officers[i]->b_no,
+                   officer_name);
+        }
+
+        printf("--------------------------------------------------\n\n");
+        printf("[n] Next | [p] Prev | [q] Quit | [1-%d] View officer\n> ", officer_count);
+
+        fgets(input, sizeof(input), stdin);
+
+        if (tolower(input[0]) == 'q')
+        {
+            break;
+        }
+        else if (tolower(input[0]) == 'n' && page < total_pages - 1)
+        {
+            page++;
+        }
+        else if (tolower(input[0]) == 'p' && page > 0)
+        {
+            page--;
+        }
+        else
+        {
+            int choice_int = atoi(input);
+            if (choice_int > 0 && choice_int <= officer_count)
+            {
+                viewOfficer(sntrph->officerList.officers[choice_int - 1]);
+            }
+        }
+    }
+}
+
 void auditTrail(LogList *logList)
 {
     for (int i = 0; i < logList->log_count; i++)
@@ -538,6 +837,7 @@ void startMenu(SNTRPH *sntrph)
         printf("Password: ");
         fgets(password, sizeof(password), stdin);
         password[strcspn(password, "\n")] = 0;
+        PrintLine("--------------------------------------------------");
         PrintLine("[✓] Credentials received.");
         bool found_user = false;
         PrintLine("[✓] Verifying officer record...");
@@ -550,9 +850,9 @@ void startMenu(SNTRPH *sntrph)
                 PrintLine("[✓] Processing credentials.");
                 if (strcmp(password, officer->password) == 0)
                 {
-                    PrintLine("--------------------------------------------------");
                     SLEEP(500);
                     PrintLine("[✓] Password authenticated.");
+                    PrintLine("--------------------------------------------------");
 
                     char welcome_message[100];
                     snprintf(welcome_message, sizeof(welcome_message), "Welcome, %s %s %s.", officer->title, officer->base->first_name, officer->base->last_name);
@@ -848,7 +1148,7 @@ Officer *check_officer(SNTRPH *sntrph, char *token)
 
         printf("[CHECKPOINT C3] Comparing token '%s' with b_no '%s'\n", token, sntrph->officerList.officers[i]->b_no);
 
-        if (strcmp(token, sntrph->officerList.officers[i]->b_no) == 0)
+        if (strcmp(token, sntrph->officerList.officers[i]->b_no) == 0 || strcmp(token, sntrph->officerList.officers[i]->officer_id) == 0)
         {
             printf("[CHECKPOINT C4] Match found at index %d\n", i);
             return sntrph->officerList.officers[i];
@@ -859,47 +1159,168 @@ Officer *check_officer(SNTRPH *sntrph, char *token)
     return NULL;
 }
 
-AuditLog *check_log(SNTRPH *sntrph, char *token){
-    if(sntrph->logList.log_count == 0){
+void deleteOfficer(SNTRPH *sntrph, char *off_id) {
+    bool found = false;
+    char date[15];
+    get_current_date(date);
+
+    char officer_name[120];
+    snprintf(officer_name, sizeof(officer_name), "%s %s %s",
+             sntrph->current_user->title,
+             sntrph->current_user->base->first_name,
+             sntrph->current_user->base->last_name);
+
+    for (int i = 0; i < sntrph->officerList.officer_count; i++) {
+        Officer *off = sntrph->officerList.officers[i];
+
+        // Correct condition: check both ID and badge number
+        if (strcmp(off_id, off->officer_id) == 0 || strcmp(off_id, off->b_no) == 0) {
+            found = true;
+
+            if (sntrph->current_user->clearance < 3) {
+                PrintLine("ACCESS DENIED: INSUFFICIENT CLEARANCE\n");
+                PrintLine("!! ATTEMPT FOLLOWED IN AUDIT TRAIL !!");
+
+                char description[200];
+                snprintf(description, sizeof(description),
+                         "%s ATTEMPTED TO DELETE OFFICER ENTRY: %s ON %s",
+                         officer_name, off_id, date);
+                addLog(sntrph, "OFFICER ENTRY DELETION ATTEMPT", off_id,
+                       sntrph->current_user, description);
+                return;
+            }
+
+            // Remove officer from list
+            for (int j = i; j < sntrph->officerList.officer_count - 1; j++) {
+                sntrph->officerList.officers[j] = sntrph->officerList.officers[j + 1];
+            }
+            sntrph->officerList.officer_count--;
+
+            char confirmation[80];
+            snprintf(confirmation, sizeof(confirmation),
+                     "[✓] DELETED AN OFFICER RECORD: <%s>", off_id);
+            PrintLine(confirmation);
+
+            char description[200];
+            snprintf(description, sizeof(description),
+                     "%s DELETED AN OFFICER RECORD: %s ON %s",
+                     officer_name, off_id, date);
+            addLog(sntrph, "RECORD DELETION", off_id, sntrph->current_user, description);
+
+            // Ask if the user wants to delete the corresponding person
+            char *person_id = off->base->person_id;
+            PrintLine("> Would you also like to delete the linked PERSON record? [y/n]: ");
+            char input[10];
+            fgets(input, sizeof(input), stdin);
+
+            if (input[0] == 'y' || input[0] == 'Y') {
+                for (int k = 0; k < sntrph->personlist.person_count; k++) {
+                    if (strcmp(person_id, sntrph->personlist.person_list[k]->person_id) == 0) {
+                        for (int m = k; m < sntrph->personlist.person_count - 1; m++) {
+                            sntrph->personlist.person_list[m] = sntrph->personlist.person_list[m + 1];
+                        }
+                        sntrph->personlist.person_count--;
+
+                        char msg[80];
+                        snprintf(msg, sizeof(msg),
+                                 "[✓] DELETED LINKED PERSON RECORD: <%s>", person_id);
+                        PrintLine(msg);
+
+                        snprintf(description, sizeof(description),
+                                 "%s ALSO DELETED LINKED PERSON RECORD: %s ON %s",
+                                 officer_name, person_id, date);
+                        addLog(sntrph, "RECORD DELETION", person_id,
+                               sntrph->current_user, description);
+                        break;
+                    }
+                }
+            }
+
+            break;  // Exit loop after processing
+        }
+    }
+
+    if (!found) {
+        PrintLine("!! NO OFFICER RECORD FOUND WITH THE GIVEN <ID> !!");
+    }
+}
+
+AuditLog *check_log(SNTRPH *sntrph, char *token)
+{
+    if (sntrph->logList.log_count == 0)
+    {
         PrintLine("!! AUDIT TRAIL IS EMPTY !!");
     }
-    if(strcmp(token, "") == 0){
+    if (strcmp(token, "") == 0)
+    {
         PrintLine("!! TOKEN IS EMPTY !!");
-        return;
+        return NULL;
     }
-    for(int i = 0; i < sntrph->logList.log_count; i++){
-        if(strcmp(token, sntrph->logList.logs[i]) == 0){
+    for (int i = 0; i < sntrph->logList.log_count; i++)
+    {
+        if (strcmp(token, sntrph->logList.logs[i]->audit_id) == 0)
+        {
             return sntrph->logList.logs[i];
         }
     }
 }
 
-Address *check_addressP(SNTRPH *sntrph, char *person){
-    if(sntrph->addressList.address_count == 0){
+Address *check_addressP(SNTRPH *sntrph, char *person)
+{
+    if (sntrph->addressList.address_count == 0)
+    {
         PrintLine("!! ADDRESSES ARE EMPTY !!");
         return NULL;
     }
-    if(strcmp(person, "") == 0){
+    if (strcmp(person, "") == 0)
+    {
         PrintLine("!! TOKEN IS EMPTY !!");
         return NULL;
     }
-    for(int i = 0; i < sntrph->addressList.address_count; i++){
-        for(int j = 0; j < sntrph->addressList.addresses[i]->person_count; j++){
-            if(strcmp(person, sntrph->addressList.addresses[i]->person_list[j]->person_id) == 0){
+    for (int i = 0; i < sntrph->addressList.address_count; i++)
+    {
+        for (int j = 0; j < sntrph->addressList.addresses[i]->person_count; j++)
+        {
+            if (strcmp(person, sntrph->addressList.addresses[i]->person_list[j]->person_id) == 0)
+            {
                 return sntrph->addressList.addresses[i];
             }
         }
     }
-
 }
 
-Person *check_person(SNTRPH *sntrph, char *token) {
-    if (sntrph->personlist.person_count == 0) {
+Address *check_address(SNTRPH *sntrph, char *token)
+{
+
+    if (sntrph->addressList.address_count == 0)
+    {
+        PrintLine("!! ADDRESSES ARE EMPTY !!");
+        return NULL;
+    }
+    if (strcmp(token, "") == 0)
+    {
+        PrintLine("!! TOKEN IS EMPTY !!");
+        return NULL;
+    }
+    for (int i = 0; i < sntrph->addressList.address_count; i++)
+    {
+        if (strcmp(token, sntrph->addressList.addresses[i]->address_id) == 0)
+        {
+            return sntrph->addressList.addresses[i];
+        }
+    }
+}
+
+Person *check_person(SNTRPH *sntrph, char *token)
+{
+    if (sntrph->personlist.person_count == 0)
+    {
         PrintLine("!! PERSON LIST IS EMPTY !!");
         return NULL;
     }
 
-    if (token == NULL || strcmp(token, "") == 0) {
+    if (token == NULL || strcmp(token, "") == 0)
+    {
         PrintLine("!! TOKEN IS EMPTY !!");
         return NULL;
     }
@@ -907,7 +1328,8 @@ Person *check_person(SNTRPH *sntrph, char *token) {
     Person *matches[50];
     int match_count = 0;
 
-    for (int i = 0; i < sntrph->personlist.person_count; i++) {
+    for (int i = 0; i < sntrph->personlist.person_count; i++)
+    {
         Person *p = sntrph->personlist.person_list[i];
 
         if (strcmp(token, p->person_id) == 0 ||
@@ -918,24 +1340,28 @@ Person *check_person(SNTRPH *sntrph, char *token) {
             strcmp(token, p->relationship_status) == 0 ||
             strstr(p->criminal_record, token) != NULL)
         {
-            if (match_count < 50) {
+            if (match_count < 50)
+            {
                 matches[match_count++] = p;
             }
         }
     }
 
-    if (match_count == 0) {
+    if (match_count == 0)
+    {
         PrintLine("!! NO MATCH FOUND !!");
         return NULL;
     }
 
-    if (match_count == 1) {
+    if (match_count == 1)
+    {
         return matches[0];
     }
 
     // Multiple matches found - display options
     printf("Multiple matches found:\n");
-    for (int i = 0; i < match_count; i++) {
+    for (int i = 0; i < match_count; i++)
+    {
         printf("%d) ID: %s, Name: %s %s, DOB: %s\n", i + 1,
                matches[i]->person_id,
                matches[i]->first_name,
@@ -946,17 +1372,30 @@ Person *check_person(SNTRPH *sntrph, char *token) {
     // Prompt user to select
     int choice = 0;
     char input[10];
-    while (1) {
+    while (1)
+    {
         printf("Enter the number of the person you want to select (1-%d): ", match_count);
         fgets(input, sizeof(input), stdin);
         choice = atoi(input);
 
-        if (choice >= 1 && choice <= match_count) {
+        if (choice >= 1 && choice <= match_count)
+        {
             return matches[choice - 1];
-        } else {
+        }
+        else
+        {
             printf("Invalid selection. Please try again.\n");
         }
     }
+}
+void random_date(char *date, size_t size)
+{
+    // Generate a random date in the format YYYY-MM-DD
+    int year = random_int(1910, 1994);
+    int month = random_int(1, 12);
+    int day = random_int(1, 28); // To avoid issues with February
+
+    snprintf(date, size, "%04d-%02d-%02d", year, month, day);
 }
 
 Officer *create_officer(const char *officer_id, const char *username, const char *password, const char *title, const char *first_name, const char *last_name, const char *badge_no, int clearance, SNTRPH *sntrph)
@@ -971,12 +1410,21 @@ Officer *create_officer(const char *officer_id, const char *username, const char
 
     printf("Checkpoint: Memory zeroed for %s\n", officer_id);
 
+    char DOB[20];
+    random_date(DOB, sizeof(DOB));
+    char criminal_record[500] = "No criminal record.";
+    char relationship_status[50] = "Single";
+
     strcpy(officer->officer_id, officer_id);
     strcpy(officer->username, username);
     strcpy(officer->password, password);
     strcpy(officer->title, title);
     strcpy(officer->base->first_name, first_name);
     strcpy(officer->base->last_name, last_name);
+    strcpy(officer->base->DOB, DOB);
+    strcpy(officer->base->criminal_record, criminal_record);
+    strcpy(officer->base->relationship_status, relationship_status);
+    strcpy(officer->base->status, "ALIVE");
 
     printf("Checkpoint: Basic info set for %s\n", officer_id);
 
@@ -1010,6 +1458,40 @@ Officer *create_officer(const char *officer_id, const char *username, const char
     return officer;
 }
 
+Person *create_person(const char *first_name, const char *last_name, const char *DOB, const char *criminal_record, const char *relationship_status, SNTRPH *sntrph)
+{
+    Person *person = malloc(sizeof(Person));
+    memset(person, 0, sizeof(Person));
+
+    printf("Checkpoint: Memory allocated for Person\n");
+
+    if (sntrph->personlist.person_count == 0 || sntrph->personlist.person_list[sntrph->personlist.person_count - 1] == NULL)
+    {
+        strcpy(person->person_id, "P000");
+    }
+    else
+    {
+        strcpy(person->person_id, sntrph->personlist.person_list[sntrph->personlist.person_count - 1]->person_id);
+        increment_id(person->person_id);
+    }
+
+    strcpy(person->first_name, first_name);
+    strcpy(person->last_name, last_name);
+    strcpy(person->DOB, DOB);
+    strcpy(person->criminal_record, criminal_record);
+    strcpy(person->relationship_status, relationship_status);
+    strcpy(person->status, "ALIVE");
+
+    printf("Checkpoint: Person details set for %s\n", person->DOB);
+
+    person->address = NULL;
+
+    sntrph->personlist.person_list[sntrph->personlist.person_count++] = person;
+
+    printf("Checkpoint: Person added to SNTRPH list\n");
+
+    return person;
+}
 Address *create_address(const char *street, const char *city, const char *zip_code, Person *person, SNTRPH *sntrph)
 {
     Address *address = malloc(sizeof(Address));
@@ -1042,6 +1524,7 @@ Address *create_address(const char *street, const char *city, const char *zip_co
     }
     address->person_count = 1;
     person->address = address;
+    address->case_count = 0;
 
     sntrph->addressList.addresses[sntrph->addressList.address_count++] = address;
 
@@ -1147,6 +1630,55 @@ void addOfficer_Input(SNTRPH *sntrph)
     printf("[✓] OFFICER CREATED: %s %s, Title: %s, Clearance: %d, b_no: %s, Address: %s\n", first_name, last_name, title, clearance, b_no, street);
 }
 
+void addPerson(SNTRPH *sntrph)
+{
+    char first_name[50];
+    printf("> Enter the person's first name: ");
+    fgets(first_name, sizeof(first_name), stdin);
+    first_name[strcspn(first_name, "\n")] = 0;
+
+    char last_name[50];
+    printf("> Enter the person's last name: ");
+    fgets(last_name, sizeof(last_name), stdin);
+    last_name[strcspn(last_name, "\n")] = 0;
+
+    char criminal_record[500];
+    printf("> Enter the person's known criminal history: ");
+    fgets(criminal_record, sizeof(criminal_record), stdin);
+    criminal_record[strcspn(criminal_record, "\n")] = 0;
+
+    char relationship_status[50];
+    printf("> Enter the person's relationship status: ");
+    fgets(relationship_status, sizeof(relationship_status), stdin);
+    relationship_status[strcspn(relationship_status, "\n")] = 0;
+
+    char DOB[30];
+    printf("> Enter the person's DOB: ");
+    fgets(DOB, sizeof(DOB), stdin);
+    DOB[strcspn(DOB, "\n")] = 0;
+
+    Person *person = create_person(first_name, last_name, DOB, criminal_record, relationship_status, sntrph);
+    PrintLine("[✓] PERSON ADDED \n");
+}
+
+void linkAddress(SNTRPH *sntrph, char *add, char *person)
+{
+    Address *address = check_address(sntrph, add);
+    Person *p = check_person(sntrph, person);
+    if (p == NULL || address == NULL)
+    {
+        printf("!! MATCH COULD NOT BE FOUND !!");
+        return;
+    }
+    p->address = address;
+    if (address->person_count == 10)
+    {
+        printf("!! MAXIMUM COUNT REACHED !!\n");
+        return;
+    }
+    address->person_list[address->person_count++] = p;
+    printf("[✓] ADDRESS LINKED\n");
+}
 void editOfficer(SNTRPH *sntrph, char *token)
 {
     Officer *officer = check_officer(sntrph, token);
@@ -1259,6 +1791,7 @@ void editOfficer(SNTRPH *sntrph, char *token)
             strcpy(officer->password, password);
             break;
         case 10:
+        {
             char date[15];
             get_current_date(date);
 
@@ -1276,10 +1809,12 @@ void editOfficer(SNTRPH *sntrph, char *token)
             PrintLine("--------------------------------------------------");
             break;
         }
+        }
     }
 }
 
-void editDisciplinary(SNTRPH *sntrph, char *token){
+void editLog(SNTRPH *sntrph, char *token)
+{
     AuditLog *log = check_log(sntrph, token);
     bool editing = true;
     while (editing)
@@ -1300,52 +1835,65 @@ void editDisciplinary(SNTRPH *sntrph, char *token){
 
         switch (buf)
         {
-            case 1:
-                char action_type[50];
-                printf("> Enter your new action type: ");
-                fgets(action_type, sizeof(action_type), stdin);
-                action_type[strcspn(action_type, "\n")] = 0;
-                strcpy(log->actionType, action_type);
-                break;
-            case 2:
-                char record_id[10];
-                printf("> Enter your new record ID: ");
-                fgets(record_id, sizeof(record_id), stdin);
-                record_id[strcspn(record_id, "\n")] = 0;
-                strcpy(log->record_id, record_id);
-                break;
-            case 3:
-                char timestamp[20];
-                printf("> Enter your new timestamp: ");
-                fgets(timestamp, sizeof(timestamp), stdin);
-                timestamp[strcspn(timestamp, "\n")] = 0;
-                strcpy(log->timestamp, timestamp);
-                break;
-            case 4:
-                char officer_id[20];
-                printf("> Enter the Officer ID: ");
-                fgets(officer_id, sizeof(officer_id), stdin);
-                officer_id[strcspn(officer_id, "\n")] = 0;
-                Officer *officer = check_officer(sntrph, officer_id);
-                log->officer = officer;
-            case 5:
-               char action_description[200];
-                printf("> Enter your new action description: ");
-                fgets(action_description, sizeof(action_description), stdin);
-                action_description[strcspn(action_description, "\n")] = 0;
-                strcpy(log->action_description, action_description);
-                break;
-            case 6:
-                editing = false;
-                break;
+        case 1:
+        {
+            char action_type[50];
+            printf("> Enter your new action type: ");
+            fgets(action_type, sizeof(action_type), stdin);
+            action_type[strcspn(action_type, "\n")] = 0;
+            strcpy(log->actionType, action_type);
+            break;
+        }
+        case 2:
+        {
+            char record_id[10];
+            printf("> Enter your new record ID: ");
+            fgets(record_id, sizeof(record_id), stdin);
+            record_id[strcspn(record_id, "\n")] = 0;
+            strcpy(log->record_id, record_id);
+            break;
+        }
+        case 3:
+        {
+            char timestamp[20];
+            printf("> Enter your new timestamp: ");
+            fgets(timestamp, sizeof(timestamp), stdin);
+            timestamp[strcspn(timestamp, "\n")] = 0;
+            strcpy(log->timestamp, timestamp);
+            break;
+        }
+        case 4:
+        {
+            char officer_id[20];
+            printf("> Enter the Officer ID: ");
+            fgets(officer_id, sizeof(officer_id), stdin);
+            officer_id[strcspn(officer_id, "\n")] = 0;
+            Officer *officer = check_officer(sntrph, officer_id);
+            log->officer = officer;
+            break;
+        }
+        case 5:
+        {
+            char action_description[200];
+            printf("> Enter your new action description: ");
+            fgets(action_description, sizeof(action_description), stdin);
+            action_description[strcspn(action_description, "\n")] = 0;
+            strcpy(log->action_description, action_description);
+            break;
+        }
+        case 6:
+            editing = false;
+            break;
         }
     }
 }
 
-void editPerson(SNTRPH *sntrph, char *token){
+void editPerson(SNTRPH *sntrph, char *token)
+{
     Person *person = check_person(sntrph, token);
     bool editing = true;
-    while(editing){
+    while (editing)
+    {
         printf("\n--------------------------------------------------\n");
         printf("            INFORMATION ALTERING SYSTEM - PERSON\n");
         printf("--------------------------------------------------\n");
@@ -1406,6 +1954,7 @@ void editPerson(SNTRPH *sntrph, char *token){
             strcpy(person->status, status);
             break;
         case 7:
+        {
             char date[15];
             get_current_date(date);
 
@@ -1413,7 +1962,7 @@ void editPerson(SNTRPH *sntrph, char *token){
             snprintf(officer_name, sizeof(officer_name), "%s %s %s", sntrph->current_user->title, sntrph->current_user->base->first_name, sntrph->current_user->base->last_name);
 
             char editperson[120];
-            snprintf(editperson, sizeof(editperson), "%s %s",  person->first_name, person->last_name);
+            snprintf(editperson, sizeof(editperson), "%s %s", person->first_name, person->last_name);
 
             char description[200];
             snprintf(description, sizeof(description), "%s ALTERED %s's PERSON PROFILE ON %s", officer_name, editperson, date);
@@ -1423,11 +1972,92 @@ void editPerson(SNTRPH *sntrph, char *token){
             editing = false;
             break;
         }
+        }
     }
 }
 
-void editAddress(SNTRPH *sntrph, char *token){
-    
+void searchPerson(SNTRPH *sntrph, char *token){
+    bool searching = true;
+    while(searching){
+        for(int i = 0; i < sntrph->personlist.person_count; i++){
+            Person *current = sntrph->personlist.person_list[i];
+            if(strstr_w(current->person_id, token) != NULL || strstr_w(current->first_name, token) != NULL || strstr_w(current->last_name, token) != NULL, strstr_w())
+        }
+    }
+}
+void editAddress(SNTRPH *sntrph, char *token)
+{
+    Address *address = check_addressP(sntrph, token);
+    if (address == NULL)
+    {
+        PrintLine("!! ADDRESS NOT FOUND !!");
+        return;
+    }
+    bool editing = true;
+    while (editing)
+    {
+        printf("\n--------------------------------------------------\n");
+        printf("            INFORMATION ALTERING SYSTEM - ADDRESS\n");
+        printf("--------------------------------------------------\n");
+        printf("1.) Street\n");
+        printf("2.) City\n");
+        printf("3.) Zip Code\n");
+        printf("4.) QUIT\n");
+        char buffer[4];
+        printf("> Enter your choice: ");
+        fgets(buffer, sizeof(buffer), stdin);
+        int buf = atoi(buffer);
+
+        switch (buf)
+        {
+        case 1:
+        {
+            printf("> Enter the new street: ");
+            char street[50];
+            fgets(street, sizeof(street), stdin);
+            street[strcspn(street, "\n")] = '\0';
+            strcpy(address->street, street);
+            break;
+        }
+        case 2:
+        {
+            printf("> Enter the new city: ");
+            char city[50];
+            fgets(city, sizeof(city), stdin);
+            city[strcspn(city, "\n")] = '\0';
+            strcpy(address->city, city);
+            break;
+        }
+        case 3:
+        {
+            printf("> Enter the new zip code: ");
+            char zip_code[20];
+            fgets(zip_code, sizeof(zip_code), stdin);
+            zip_code[strcspn(zip_code, "\n")] = '\0';
+            strcpy(address->zip_code, zip_code);
+            break;
+        }
+        case 4:
+        {
+            char date[15];
+            get_current_date(date);
+
+            char officer_name[120];
+            snprintf(officer_name, sizeof(officer_name), "%s %s %s", sntrph->current_user->title, sntrph->current_user->base->first_name, sntrph->current_user->base->last_name);
+
+            char editaddress[120];
+            snprintf(editaddress, sizeof(editaddress), "%s", address->street);
+
+            char description[200];
+            snprintf(description, sizeof(description), "%s ALTERED %s's ADDRESS ON %s", officer_name, editaddress, date);
+            addLog(sntrph, "ADDRESS ALTERATION", address->address_id, sntrph->current_user, description);
+            PrintLine("Quitting...");
+            PrintLine("--------------------------------------------------");
+            editing = false;
+            break;
+        }
+        }
+    }
 }
 
 void addDisciplinary(SNTRPH *sntrph, char *token)
@@ -1522,23 +2152,23 @@ void addDisciplinary(SNTRPH *sntrph, char *token)
             officer->disciplinary_actions[i] = da;
             printf("[✓] DISCIPLINARY ADDED: %s \n", da->d_id);
             char date[15];
-        get_current_date(date);
+            get_current_date(date);
 
-        char officer_name[120];
-        snprintf(officer_name, sizeof(officer_name), "%s %s %s",
-                 sntrph->current_user->title,
-                 sntrph->current_user->base->first_name,
-                 sntrph->current_user->base->last_name);
-                         char badofficer[120];
-        snprintf(badofficer, sizeof(badofficer), "%s %s %s",
-                 officer->title,
-                 officer->base->first_name,
-                 officer->base->last_name);
+            char officer_name[120];
+            snprintf(officer_name, sizeof(officer_name), "%s %s %s",
+                     sntrph->current_user->title,
+                     sntrph->current_user->base->first_name,
+                     sntrph->current_user->base->last_name);
+            char badofficer[120];
+            snprintf(badofficer, sizeof(badofficer), "%s %s %s",
+                     officer->title,
+                     officer->base->first_name,
+                     officer->base->last_name);
 
-        char description[200];
-        snprintf(description, sizeof(description), "%s ADDED A DISCIPLINARY TO %s's OFFICER PROFILE ON %s", officer_name,badofficer, date);
+            char description[200];
+            snprintf(description, sizeof(description), "%s ADDED A DISCIPLINARY TO %s's OFFICER PROFILE ON %s", officer_name, badofficer, date);
 
-        addLog(sntrph, "DISCIPLINARY ADDITION", token, sntrph->current_user, description);
+            addLog(sntrph, "DISCIPLINARY ADDITION", token, sntrph->current_user, description);
             return;
         }
     }
@@ -1668,6 +2298,69 @@ void seed_officers(int count, SNTRPH *sntrph)
     }
 }
 
+void seed_people(int count, SNTRPH *sntrph)
+{
+    // Example random first and last names
+    const char *first_names[100] = {
+        "Michael", "Jessica", "Christopher", "Ashley", "Matthew", "Emily", "Joshua", "Samantha",
+        "Daniel", "Amanda", "David", "Sarah", "Andrew", "Stephanie", "Joseph", "Jennifer",
+        "John", "Elizabeth", "Justin", "Nicole", "Anthony", "Brittany", "James", "Lauren",
+        "Robert", "Rachel", "Nicholas", "Danielle", "Jonathan", "Kayla", "Kevin", "Tiffany",
+        "William", "Rebecca", "Brian", "Michelle", "Thomas", "Christina", "Steven", "Victoria",
+        "Eric", "Alexandra", "Alexander", "Megan", "Tyler", "Melissa", "Ryan", "Erica",
+        "Brandon", "Courtney", "Zachary", "Angela", "Benjamin", "Kimberly", "Sean", "Jacqueline",
+        "Timothy", "Alyssa", "Gregory", "Crystal", "Adam", "Vanessa", "Luis", "Maria",
+        "Angel", "Jasmine", "Jason", "Brianna", "Carlos", "Gabrielle", "Peter", "Natalie",
+        "Frank", "Haley", "Jorge", "Cassandra", "Victor", "Monica", "Manuel", "Paige",
+        "Jesus", "Amber", "Edward", "Marissa", "Samuel", "Catherine", "Mark", "Sabrina",
+        "Aaron", "Veronica", "Jeremy", "Leslie", "Kenneth", "Alexis", "Noah", "Heather",
+        "Nathan", "Ariana", "Richard", "Katherine"};
+
+    const char *last_names[50] = {
+        "Smith", "Johnson", "Williams", "Brown", "Jones",
+        "Garcia", "Rodriguez", "Martinez", "Hernandez", "Lopez",
+        "Gonzalez", "Perez", "Sanchez", "Ramirez", "Torres",
+        "Nguyen", "Lee", "Kim", "Chen", "Wong",
+        "Cohen", "Levine", "Goldberg", "Rosenberg", "Katz",
+        "Murphy", "Kelly", "Sullivan", "O'Brien", "Kennedy",
+        "DiAngelo", "Esposito", "Russo", "Romano", "Bianchi",
+        "Rivera", "Castro", "Ortiz", "Delgado", "Morales",
+        "Thomas", "Jackson", "Lewis", "Walker", "Robinson",
+        "Diaz", "Reyes", "Cruz", "Flores", "Washington"};
+
+    char street[128], city[128], zip_code[128];
+
+    srand(time(NULL)); // Seed the random number generator for randomness
+
+    for (int i = 0; i < count; i++)
+    {
+        // Generate random details for each person
+        const char *first_name = random_name(first_names, sizeof(first_names) / sizeof(first_names[0]));
+        const char *last_name = random_name(last_names, sizeof(last_names) / sizeof(last_names[0]));
+
+        random_address(street, city, zip_code); // Generate address components
+        char personid[15];
+        if (sntrph->personlist.person_count == 0 || sntrph->personlist.person_list[sntrph->personlist.person_count - 1] == NULL)
+        {
+            strcpy(personid, "P000");
+        }
+        else
+        {
+            strcpy(personid, sntrph->personlist.person_list[sntrph->personlist.person_count - 1]->person_id);
+            increment_id(personid);
+        }
+
+        char criminal_record[500] = ""; // Empty criminal record
+        char DOB[20];
+        random_date(DOB, sizeof(DOB));     // Empty date of birth
+        char relationship_status[50] = ""; // Empty relationship status
+        char status[50] = "ALIVE";         // Default status
+
+        Person *person = create_person(first_name, last_name, DOB, criminal_record, relationship_status, sntrph);
+        Address *address = create_address(street, city, zip_code, person, sntrph);
+        printf("Created person: %s %s with DOB: %s\n", first_name, last_name, DOB);
+    }
+}
 void processCommand(SNTRPH *sntrph, char *input)
 {
     char w_input[50];
@@ -1719,16 +2412,19 @@ void processCommand(SNTRPH *sntrph, char *input)
         }
         else if (strcmp(token_2, "EVIDENCE") == 0)
         {
-            char *token_3 = strtok(NULL, delimiters);
-            Evidence *ev = checkEvidence(sntrph, token_3);
-            printEvidence(ev);
+
+            viewEvidence(sntrph);
+        }
+        else if (strcmp(token_2, "ADDRESSES") == 0)
+        {
+            viewAddresses(sntrph);
         }
         else if (strcmp(token_2, "OFFICERS") == 0)
         {
             if (sntrph->current_user->clearance < 3)
             {
                 PrintLine("ACCESS DENIED: INSUFFICIENT CLEARANCE\n");
-                PrintLine("!ATTEMPT FOLLOWED IN AUDIT TRAIL!!");
+                PrintLine("!! ATTEMPT FOLLOWED IN AUDIT TRAIL !!");
 
                 char description[200];
                 char date[15];
@@ -1743,6 +2439,23 @@ void processCommand(SNTRPH *sntrph, char *input)
             char *token_3 = strtok(NULL, delimiters);
             Officer *off = check_officer(sntrph, token_3);
             viewOfficer(off);
+        }
+        else if (strcmp(token_2, "PERSON") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            Person *person = check_person(sntrph, token_3);
+            if (person != NULL)
+            {
+                viewPerson(person);
+            }
+            else
+            {
+                PrintLine("Person not found.");
+            }
+        }
+        else if (strcmp(token_2, "PEOPLE") == 0)
+        {
+            viewPeople(sntrph);
         }
     }
     // sendMessage(sntrph->current_user, , &sntrph);
@@ -1765,6 +2478,10 @@ void processCommand(SNTRPH *sntrph, char *input)
             char *token_3 = strtok(NULL, delimiters);
             addDisciplinary(sntrph, token_3);
         }
+        else if (strcmp(token_2, "PERSON") == 0)
+        {
+            addPerson(sntrph);
+        }
     }
     else if (strcmp(token, "DELETE") == 0)
     {
@@ -1774,6 +2491,22 @@ void processCommand(SNTRPH *sntrph, char *input)
             char *token_3 = strtok(NULL, delimiters);
             deleteEvidence(sntrph, token_3);
         }
+        else if (strcmp(token_2, "PERSON") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            deletePerson(sntrph, token_3);
+        }
+        else if (strcmp(token_2, "ADDRESS") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            deleteAddress(sntrph, token_3);
+        }
+        else if (strcmp(token_2, "OFFICER") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            deleteOfficer(sntrph, token_3);
+        }
+
     }
     else if (strcmp(token, "AUDIT") == 0)
     {
@@ -1790,7 +2523,7 @@ void processCommand(SNTRPH *sntrph, char *input)
             addLog(sntrph, "AUDIT TRAIL FOLLOWED", "", sntrph->current_user, description);
         }
     }
-    else if (strcmp(token, "EDIT") == 0)
+    else if (strcmp(token, "ALTER") == 0)
     {
         char *token_2 = strtok(NULL, delimiters);
         if (strcmp(token_2, "OFFICER") == 0)
@@ -1798,6 +2531,36 @@ void processCommand(SNTRPH *sntrph, char *input)
             char *token_3 = strtok(NULL, delimiters);
             editOfficer(sntrph, token_3);
         }
+        else if (strcmp(token_2, "AUDIT") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            editLog(sntrph, token_3);
+        }
+        else if (strcmp(token_2, "PERSON") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            editPerson(sntrph, token_3);
+        }
+        else if (strcmp(token_2, "ADDRESS") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            editAddress(sntrph, token_3);
+        }
+    }
+    else if (strcmp(token, "LINK") == 0)
+    {
+        char *token_2 = strtok(NULL, delimiters);
+        if (strcmp(token_2, "ADDRESS") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            char *token_4 = strtok(NULL, delimiters);
+
+            linkAddress(sntrph, token_3, token_4);
+        }
+    }
+    else
+    {
+        printf("!! INVALID COMMAND!! : %s", input);
     }
 }
 void populateDB(SNTRPH *sntrph)
@@ -1831,6 +2594,89 @@ void populateDB(SNTRPH *sntrph)
     printf("Checkpoint 20: populateDB completed successfully\n");
 
     seed_officers(30, sntrph);
+    seed_people(30, sntrph);
+}
+void free_SNTRPH(SNTRPH *system)
+{
+    // Free PersonList
+    for (int i = 0; i < system->personlist.person_count; i++)
+    {
+        if (system->personlist.person_list[i])
+        {
+            free(system->personlist.person_list[i]);
+        }
+    }
+
+    // Free AddressList
+    for (int i = 0; i < system->addressList.address_count; i++)
+    {
+        if (system->addressList.addresses[i])
+        {
+            free(system->addressList.addresses[i]);
+        }
+    }
+
+    // Free EvidenceArchive
+    for (int i = 0; i < system->evidenceArchive.total_items; i++)
+    {
+        if (system->evidenceArchive.evidence_items[i])
+        {
+            free(system->evidenceArchive.evidence_items[i]);
+        }
+    }
+
+    // Free ReportList
+    for (int i = 0; i < system->reportList.report_count; i++)
+    {
+        if (system->reportList.reports[i])
+        {
+            free(system->reportList.reports[i]);
+        }
+    }
+
+    // Free LogList
+    for (int i = 0; i < system->logList.log_count; i++)
+    {
+        if (system->logList.logs[i])
+        {
+            free(system->logList.logs[i]);
+        }
+    }
+
+    // Free OfficerList
+    for (int i = 0; i < system->officerList.officer_count; i++)
+    {
+        Officer *officer = system->officerList.officers[i];
+        if (officer)
+        {
+            // Free mailbox and its messages
+            if (officer->mailbox)
+            {
+                for (int j = 0; j < officer->mailbox->message_count; j++)
+                {
+                    if (officer->mailbox->messages[j])
+                    {
+                        free(officer->mailbox->messages[j]);
+                    }
+                }
+                free(officer->mailbox);
+            }
+
+            // Free disciplinary actions
+            for (int j = 0; j < 3; j++)
+            {
+                if (officer->disciplinary_actions[j])
+                {
+                    free(officer->disciplinary_actions[j]);
+                }
+            }
+
+            free(officer);
+        }
+    }
+
+    // If SNTRPH *system itself was malloc’d and you want to free it too:
+    // free(system);
 }
 
 void initSNTRPH(SNTRPH *sntrph)
@@ -1905,6 +2751,7 @@ int main()
         input[strcspn(input, "\n")] = 0; // Remove newline
         if (strcmp(input, "quit") == 0)
         {
+            free_SNTRPH(&sntrph);
             break;
         }
         processCommand(&sntrph, input);

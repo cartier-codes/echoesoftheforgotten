@@ -1,5 +1,5 @@
 #include "headers/commands.h"
-
+#include "headers/struct.h"
 void openCommand(Detective *detective, char *token, ItemCollection *itemCO)
 {
     if (token != NULL)
@@ -231,7 +231,7 @@ void moveCommand(EMS *ems, Detective *detective, char *direction, CFCollection *
         }
     }
 }
-void examineCommand(EMS *ems, Detective *detective, char *token, CFCollection *CFCO)
+void examineCommand(EMS *ems, SNTRPH *sntrph, Detective *detective, char *token, CFCollection *CFCO)
 {
     char *prefix = "Case File #";
     size_t str_len = strlen(token);
@@ -249,22 +249,73 @@ void examineCommand(EMS *ems, Detective *detective, char *token, CFCollection *C
                 return;
             }
 
-            strcpy(token, detective->inventory.case_files[cf_num - 1].name);
+            CaseFile *cf = &detective->inventory.case_files[cf_num - 1];
+            strcpy(token, cf->name ? cf->name : "[Unnamed Case]");
+            
             printf("\n==================================================================================================================================================================");
-            printf("\n\nCase File #%d: %s", cf_num, detective->inventory.case_files[cf_num - 1].name);
-            printf("\nCase ID: %s\n\n", detective->inventory.case_files[cf_num - 1].case_no);
-            printf("Lead: %s\n", detective->inventory.case_files[cf_num - 1].lead);
-            printf("%s\n", detective->inventory.case_files[cf_num - 1].location);
-            printf("Summary: %s\n\n", detective->inventory.case_files[cf_num - 1].summary);
-            printf("%s\n", detective->inventory.case_files[cf_num - 1].victims);
-            printf("%s\n\n", detective->inventory.case_files[cf_num - 1].evidence);
-            printf("%s\n\n", detective->inventory.case_files[cf_num - 1].suspects); // Corrected
+            printf("\n\nCase File #%d: %s", cf_num, cf->name ? cf->name : "[Unnamed Case]");
+            printf("\nCase ID: %s", cf->case_no ? cf->case_no : "[No ID]");
+            printf("\nLead: %s", cf->lead ? cf->lead : "[No Lead]");
+
+            if (cf->location)
+                printf("\nLocation: %s, %s", cf->location->street, cf->location->city);
+            else
+                printf("\nLocation: [Unknown]");
+
+            printf("\nSummary: %s\n", cf->summary ? cf->summary : "[No Summary]");
+
+            printf("\n--- Victims ---\n");
+            if (cf->victim_count == 0)
+                printf("[None Listed]\n");
+            else
+            {
+                for (int i = 0; i < cf->victim_count; i++)
+                {
+                    if (cf->victims[i])
+                        printf("%s %s\n", cf->victims[i]->first_name, cf->victims[i]->last_name);
+                    else
+                        printf("[Missing victim entry]\n");
+                }
+            }
+
+            printf("\n--- Suspects ---\n");
+            if (cf->suspect_count == 0)
+                printf("[None Listed]\n");
+            else
+            {
+                for (int i = 0; i < cf->suspect_count; i++)
+                {
+                    if (cf->suspects[i])
+                        printf("%s %s\n", cf->suspects[i]->first_name, cf->suspects[i]->last_name);
+                    else
+                        printf("[Missing suspect entry]\n");
+                }
+            }
+
+            printf("\n--- Evidence Notes ---\n%s\n", cf->evidence_notes ? cf->evidence_notes : "[No Notes]");
+
+            printf("\n--- Evidence Files ---\n");
+            if (cf->evidence_count == 0)
+                printf("[None Listed]\n");
+            else
+            {
+                for (int i = 0; i < cf->evidence_count; i++)
+                {
+                    if (cf->evidence[i])
+                        printf("%s (%s)\n", cf->evidence[i]->name, cf->evidence[i]->status);
+                    else
+                        printf("[Missing evidence entry]\n");
+                }
+            }
+
             printf("==================================================================================================================================================================\n\n");
+
             sleep(1);
             updateEMS(ems, detective, EXAMINE, token, CFCO);
         }
     }
 }
+
 void dropCommand(EMS *ems, Detective *detective, char *token)
 {
     char *item = strtok(token, " ");
@@ -487,7 +538,7 @@ void takeCommand(EMS *ems, Detective *detective, char *token)
         printf("Invalid location or item\n");
     }
 }
-void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *itemList, CFCollection *CFCO)
+void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *itemList, CFCollection *CFCO, SNTRPH *sntrph)
 {
     // Make a copy of the input string to avoid modifying the original
     char buffer[256];
@@ -529,7 +580,7 @@ void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *i
                 // Remove leading spaces from itemName
                 while (*itemName == ' ')
                     itemName++;
-                examineCommand(ems, detective, itemName, CFCO);
+                examineCommand(ems, detective, itemName, CFCO, sntrph);
             }
             else
             {
