@@ -14,7 +14,6 @@ void traverseDialogue(EMS *ems, DialogueTree *root, Detective *detective)
         if (root->option_1 == NULL)
         {
             if(root->event_index > 0){
-                printf("Debug: Event Index: %d.\n", root->event_index);
                 printf("============================================================================\n");
                triggerEMS(ems, root->event_index, detective, ems->event_queue[root->event_index].type);
             }
@@ -31,6 +30,10 @@ void traverseDialogue(EMS *ems, DialogueTree *root, Detective *detective)
         printf("%s: %s\n", root->speaker->name, root->text);
         if ((root->option_1 == NULL && root->option_2 == NULL))
         {
+            if(root->event_index > 0){
+                printf("============================================================================\n");
+               triggerEMS(ems, root->event_index, detective, ems->event_queue[root->event_index].type);
+            }
             return;
         }
         else if (root->option_2 == NULL)

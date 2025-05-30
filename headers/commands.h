@@ -12,7 +12,7 @@
 
 void openCommand(Detective *detective, char *token,ItemCollection *itemCO);
 void moveCommand(EMS *ems,Detective *detective, char* direction, CFCollection *CFCO);
-void examineCommand(SNTRPH *sntrph, Detective *detective, char *token, CFCollection *CFCO);
+void examineCommand(EMS *ems, SNTRPH *sntrph, Detective *detective, char *token, CFCollection *CFCO);
 void dropCommand(EMS *ems, Detective *detective, char *token);
 void takeCommand(EMS *ems, Detective *detective, char *token);
 void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *itemList, CFCollection *CFCO, SNTRPH *sntrph); 

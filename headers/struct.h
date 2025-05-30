@@ -17,6 +17,7 @@ typedef struct AddressList AddressList;
 typedef struct PersonList PersonList;
 typedef struct ReportList ReportList;
 typedef struct LogList LogList;
+typedef struct CaseList CaseList;
 typedef struct OfficerList OfficerList;
 typedef struct GBOX GBOX;
 typedef struct GMessage GMessage;
@@ -43,6 +44,7 @@ struct Address
     Person *person_list[10];
     int person_count;
     int case_count;
+    bool flagged;
 };
 struct GBOX
 {
@@ -141,6 +143,13 @@ struct OfficerList
     Officer *officers[MAX_ADDRESSES];
     int officer_count;
 };
+
+struct CaseList{
+    CaseFile *cases[MAX_ADDRESSES];
+    CaseFile *archive[MAX_ADDRESSES];
+    CaseFile *deleted[MAX_ADDRESSES];
+    int case_count;
+};
 struct SNTRPH
 {
     PersonList personlist;
@@ -148,8 +157,10 @@ struct SNTRPH
     EvidenceArchive evidenceArchive;
     ReportList reportList;
     LogList logList;
+    CaseList caseList;
     OfficerList officerList;
     Officer *current_user;
+    
 };
 struct GMessage
 {
@@ -169,7 +180,7 @@ struct CaseFile {
     char lead[50];                 // Officer ID or name
     Address *location;             // Pointer to Address
     char summary[1000];
-    char type[50];
+    char type[100];
     Person *victims[5];
     int victim_count;
 

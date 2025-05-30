@@ -154,10 +154,19 @@ void addConnection(Location *room1, Location *room2, char *direction)
     }
 }
 void addItemToRoom(Item *item, Location *room){
-    if(room->size == room->capacity){
-        room->capacity*=2;
-        room->items = (Item **)realloc(room->items, room->capacity * sizeof(Item *));
+if(room->size == room->capacity){
+    if(room->capacity == 0)
+        room->capacity = 1;
+    else
+        room->capacity *= 2;
+    room->items = (Item **)realloc(room->items, room->capacity * sizeof(Item *));
+    if(room->items == NULL) {
+        // Handle realloc failure
+        perror("realloc failed");
+        exit(1);
     }
+}
+
     room->items[room->size] = item;
     room->size++;
 }

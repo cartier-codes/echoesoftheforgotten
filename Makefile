@@ -1,8 +1,8 @@
 # Compiler to use
-CC = clang
+CC = gcc
 
 # Compiler flags
-CFLAGS = -Iheaders # Include the headers directory
+CFLAGS = -Iheaders -g # Include the headers directory
 
 # Source files
 SRC = add.c commands.c dialogue.c ems.c initialise.c print.c remove.c main.c

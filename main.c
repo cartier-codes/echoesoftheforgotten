@@ -56,6 +56,7 @@ int main(void)
     DialogueTree ridgewood_scene_1_3;
     DialogueTree ridgewood_scene_1_4;
     DialogueTree ridgewood_scene_1_5;
+    DialogueTree ridgewood_scene_1_6;
     DialogueTree after_ridge_1;
     DialogueTree test_event_2;
     EMSEvent TTE1;
@@ -78,7 +79,7 @@ int main(void)
 
     initialiseItemLookup(&ItemCO);
     initialiseCFLookup(&CFCO);
-    initialiseCase(&casefileno1,"The Campside Kidnapping", "C037992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1968, Michael O'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Large adult sized footprints found leading from the tent toward the rear entrance.\nSuspicious Activity:\n\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\nSearch Efforts:\n\tSearch teams combed through the park over the span of 3 days.\n\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Open", "MISSING", false);
+    initialiseCase(&casefileno1,"The Campside Kidnapping", "C037992", "23/03/1978", "Detective Chris Levins (circa 1993: Max Kruger.)", "In the late night of March 23, 1968, Michael O'Connell, a four year old toddler, was reported missing by his parents. Michael was last seen in his parents' tent asleep in Ridgewood National Park, which is known for its clear trails and beautiful scenery. According to his family, they have no recollection of any people of interest. They do not remember the day prior. They woke the next morning, and Michael was nowhere to be found.", "Multiple large adult sized footprints found leading from the tent toward the rear entrance.\nSuspicious Activity:\n\tA fisherman, identified as Alfred Zimmerman, was seen lingering around the campsite earlier that evening.\n\tZimmerman was detained on child abduction charges, but released under insufficient evidence.\n\tWitnesses reported Zimmerman staring at the children from across the lake, acting \"feverish\"\nSearch Efforts:\n\tSearch teams combed through the park over the span of 3 days.\n\tNo physical evidence of Michael was found, no signs of struggle or foul play at the site.", "Open", "MISSING", false);
 
     addCFToLookup(&CFCO, &casefileno1);
 
@@ -116,17 +117,19 @@ int main(void)
     initialiseDialogue(&office_scene_1, &lieutenant, "Morning partner, how's life treating you?", &office_scene_o1, &office_scene_o2, -1);
 
     initialiseDialogue(&examine_scene_1_4, &detective2, "The O\'Connells\' died in a gas leak, so I can't talk to them now. I should start by interviewing this fisherman. That seems like the most ordered approach and God knows I fucking need order.", NULL, NULL, -1);
-    initialiseDialogue(&examine_scene_1_3, &detective2, "Kid even has an eyebrow scar like me. Normally I wouldn't bother with a cold case, but this one is intriguing me. And the family doesn\'t remember the day they arrrived? Were they drugged perhaps?", &examine_scene_1_4, NULL, -1);
+    initialiseDialogue(&examine_scene_1_3, &detective2, "Kid even has an eyebrow scar like me. Normally I wouldn't bother with a cold case, but this one is intriguing me.", &examine_scene_1_4, NULL, -1);
     initialiseDialogue(&examine_scene_1_2, &detective2, "A young boy, randomly goes missing in the middle of the night, and no one has heard a sliver of information since. Not a whisper, not a sighting, nothing.", &examine_scene_1_3, NULL, -1);
     initialiseDialogue(&examine_scene_1_1, &detective2, "In Ridgewood Park. Damn that's close to home.", &examine_scene_1_2, NULL, -1);
     initialiseDialogue(&examine_scene_1, &detective2, "Interesting. A missing case with an obvious suspect but no arrest.", &examine_scene_1_1, NULL, -1);
 
-    initialiseDialogue(&ridgewood_scene_1_5, &detective2, "Alright. I'll be on my way sir.", NULL, NULL, 3);
+
+    initialiseDialogue(&ridgewood_scene_1_6, &fisherman, "Hold on- wait. Look I-I'm trying to save you. You're fishing in some deep waters kid. Whoever took that kid, made sure he was never found. Some things don't want to be found, especially those deep below the surface... I got a gut feeling that this is Pandora's box you fucking around with.", NULL, NULL, 3);
+    initialiseDialogue(&ridgewood_scene_1_5, &detective2, "Alright. I'll be on my way sir.", &ridgewood_scene_1_6, NULL, -1);
     initialiseDialogue(&ridgewood_scene_1_3, &fisherman, "You got some motherfucking nerve boy. I'll tell you what I told you guys back then. I ain't do shit. Now, if you keep pestering me about some missing kid. You'll be the next one.", &ridgewood_scene_1_5, NULL, -1);
     initialiseDialogue(&ridgewood_scene_1_2, &detective2, "Look. I'm here to talk to you about the case you were involved in around 68. You don't have to talk to me, but I'd appreciate it if you did.", &ridgewood_scene_1_3, NULL, -1);
     initialiseDialogue(&ridgewood_scene_1_1, &fisherman, "Hey!! What the hell do you think you're doing? Rocking up to my home, uninvited. You must have some nerve.", &ridgewood_scene_1_2, NULL, -1);
 
-    initialiseDialogue(&after_ridge_1, &detective2, "This job doesn't pay me enough to deal with this shit.", NULL, NULL, -1);
+    initialiseDialogue(&after_ridge_1, &detective2, "**What the fuck does that even mean? So there's a coverup?? ", NULL, NULL, -1);
 
     initialiseEMS(&ems);
     initialiseEMSEvent(&office_scene_1_event, &ems, &office, DIALOGUE, &office_scene_1, -1);

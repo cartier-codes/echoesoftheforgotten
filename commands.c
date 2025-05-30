@@ -580,7 +580,7 @@ void processCommand(EMS *ems, char *str, Detective *detective, ItemCollection *i
                 // Remove leading spaces from itemName
                 while (*itemName == ' ')
                     itemName++;
-                examineCommand(ems, detective, itemName, CFCO, sntrph);
+                examineCommand(ems,sntrph, detective, itemName, CFCO);
             }
             else
             {
