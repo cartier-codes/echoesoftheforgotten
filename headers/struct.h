@@ -27,7 +27,7 @@ typedef struct GMessage GMessage;
 #define MAX_ADDRESS_LENGTH 100
 #define MAX_ARRESTS 10
 #define MAX_PERSONS 100 // Adjust as needed
-#define MAX_ADDRESSES 100
+#define MAX_ADDRESSES 200
 #define MAX_CF 50
 #define MAX_AR 50
 #define MAX_EV 50
@@ -69,7 +69,7 @@ struct Person
 };
 struct PersonList
 {
-    Person *person_list[MAX_PERSONS];
+    Person *person_list[MAX_ADDRESSES];
     int person_count;
 };
 struct AdoptionReport
@@ -101,7 +101,7 @@ struct Evidence
 };
 struct EvidenceArchive
 {
-    Evidence *evidence_items[MAX_EV];
+    Evidence *evidence_items[MAX_ADDRESSES];
     int total_items;
 };
 struct AuditLog
@@ -149,6 +149,9 @@ struct CaseList{
     CaseFile *archive[MAX_ADDRESSES];
     CaseFile *deleted[MAX_ADDRESSES];
     int case_count;
+    int archive_count;
+    int deleted_count;
+
 };
 struct SNTRPH
 {
