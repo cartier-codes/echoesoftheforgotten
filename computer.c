@@ -34,6 +34,14 @@ int evalPersonCondition(Person *p, const char *field, const char *value)
         return strcmp(p->status, value) == 0;
     return 0;
 }
+int evalGCondition(GMessage *m, const char *field, const char *value){
+    if(strcmp(field, "sender") == 0){
+        return strcmp(m->sender->b_no, value) == 0;
+    }
+    if(strcmp(field, "read") == 0){
+       return atoi(value) ? m->read : !m->read;
+    }
+}
 
 int evalOfficerCondition(Officer *o, const char *field, const char *value)
 {
@@ -100,8 +108,10 @@ int evalCaseCondition(CaseFile *c, const char *field, const char *value)
 
 int evalTrailCondition(AuditLog *a, const char *field, const char *value)
 {
-    if (strcmp(field, "officer") == 0)
+    if (strcmp(field, "officer") == 0){
+        printf("Reached.\n");
         return strcmp(a->officer->b_no, value) == 0;
+    }
 }
 int evalAddCondition(Address *a, const char *field, const char *value)
 {
@@ -947,7 +957,6 @@ void viewLog( AuditLog *log)
     printf("\n--------------------------------------------------\n");
     printf("%s\n\n", log->action_description);
     printf("--------------------------------------------------\n");
-    printf("[Press Enter to view next log]\n");
 }
 void auditTrail(LogList *logList)
 {
@@ -2480,6 +2489,59 @@ void searchResultsL(SNTRPH *sntrph, AuditLog *matches[], int count)
         }
     }
 }
+void searchResultsM(SNTRPH *sntrph, GMessage *matches[], int count)
+{
+
+    int page = 0;
+    int total_pages = (count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while (1)
+    {
+        system("cls");
+        printf("\n--------------------------------------------------\n");
+        printf("            SAINT RAPHAEL EXPLORER SYSTEM - LOG\n");
+        printf("--------------------------------------------------\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > count)
+        {
+            end = count;
+        }
+
+        for (int i = start; i < end; i++)
+        {
+            GMessage *msg = matches[i];
+            printf("Message %d, Subject: %s, %s| %s\n", i + 1, msg->subject, msg->timestamp, (msg->read) ? "READ" : "UNREAD");
+        }
+        printf("--------------------------------------------------\n\n");
+        printf("[n] Next | [p] Prev | [q] Quit | [1-%d] View person\n> ", count);
+
+        fgets(input, sizeof(input), stdin);
+
+        if (tolower(input[0]) == 'q')
+        {
+            break;
+        }
+        else if (tolower(input[0]) == 'n' && page < total_pages - 1)
+        {
+            page++;
+        }
+        else if (tolower(input[0]) == 'p' && page > 0)
+        {
+            page--;
+        }
+        else
+        {
+            int choice_int = atoi(input);
+            if (choice_int > 0 && choice_int <= count)
+            {
+                printMessage(matches[choice_int - 1]);
+            }
+        }
+    }
+}
 void searchPerson(SNTRPH *sntrph, char *token)
 {
     // Temporary array to store matched Person pointers
@@ -3526,7 +3588,32 @@ void recoverArchived(SNTRPH *sntrph, char *token)
         return;
     }
 }
+GMessage **filterMessages(SNTRPH *sntrph, const char **fields, const char **values, const char **operators, int conditionsCount, int *filteredCount)
+{
+    GBOX *gbox = sntrph->current_user->mailbox;
+    GMessage **filtered = malloc(gbox->message_count * sizeof(GMessage *));
+    *filteredCount = 0;
 
+    for (int i = 0; i < gbox->message_count; i++)
+    {
+        GMessage *msg = gbox->messages[i];
+        int match = evalGCondition(msg, fields[0], values[0]);
+
+        for (int c = 1; c < conditionsCount; c++)
+        {
+            if (strcmp(operators[c - 1], "AND") == 0)
+                match = match && evalGCondition(msg, fields[c], values[c]);
+            else if (strcmp(operators[c - 1], "OR") == 0)
+                match = match || evalGCondition(msg, fields[c], values[c]);
+        }
+
+        if (match)
+            filtered[(*filteredCount)++] = msg;
+    }
+
+    filtered = realloc(filtered, (*filteredCount) * sizeof(GMessage *));
+    return filtered;
+}
 // Returns dynamically allocated array of Person* that match filters, and sets filteredCount
 Person **filterPeople(SNTRPH *sntrph, const char **fields, const char **values, const char **operators, int conditionsCount, int *filteredCount)
 {
@@ -3558,7 +3645,7 @@ Person **filterPeople(SNTRPH *sntrph, const char **fields, const char **values, 
 Officer **filterOfficers(SNTRPH *sntrph, const char **fields, char **values, const char **ops, int conditionsCount, int *filteredCount)
 {
     OfficerList *offList = &sntrph->officerList;
-    Officer **filtered = malloc(offList->officer_count * sizeof(Person *));
+    Officer **filtered = malloc(offList->officer_count * sizeof(Officer *));
     *filteredCount = 0;
 
     for (int i = 0; i < offList->officer_count; i++)
@@ -3658,6 +3745,51 @@ Address **filterAdds(SNTRPH *sntrph, const char **fields, char **values, const c
     }
     filtered = realloc(filtered, (*filteredCount) * sizeof(Person *));
     return filtered;
+}
+
+
+void processFilterMessages(SNTRPH *sntrph, char *input){
+
+
+    const char *fields[10];
+    const char *values[10];
+    const char *operators[9]; // One less than conditions
+    int condCount = 0;
+    int opCount = 0;
+
+    char *token = strtok(input, " ");
+    while (token != NULL)
+    {
+        if (strcmp(token, "--field") == 0)
+        {
+            token = strtok(NULL, " ");
+            fields[condCount] = token;
+        }
+        else if (strcmp(token, "--value") == 0)
+        {
+            token = strtok(NULL, " ");
+            values[condCount] = token;
+            condCount++;
+        }
+        else if (strcmp(token, "AND") == 0 || strcmp(token, "OR") == 0)
+        {
+            operators[opCount++] = token;
+        }
+        token = strtok(NULL, " ");
+    }
+
+    if (condCount == 0)
+    {
+        printf("No filter conditions provided.\n");
+        return;
+    }
+
+    int filteredCount = 0;
+    GMessage **filteredMessages = filterMessages(sntrph, fields, values, operators, condCount, &filteredCount);
+
+    searchResultsM(sntrph, filteredMessages, filteredCount);
+
+    free(filteredMessages);
 }
 void processFilterPeople(SNTRPH *sntrph, char *input)
 {
@@ -3910,7 +4042,7 @@ void seed_officers(int count, SNTRPH *sntrph)
         "Hannah", "Zachary", "Nicole", "Ethan"};
 
     const char *last_names[] = {
-        "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "García",
+        "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia",
         "Rodriguez", "Martinez", "Hernandez", "Lopez", "Wilson", "Taylor", "Moore",
         "Anderson", "Thomas", "Jackson", "White", "Martin"};
 
@@ -4512,6 +4644,22 @@ void processCommand(SNTRPH *sntrph, char *input)
                 while (*rest == ' ')
                     rest++;
                 processFilterLog(sntrph, rest);
+                return;
+            }
+        }
+          else if (token_2 != NULL && strcmp(token_2, "SERAPH") == 0)
+        {
+            char *rest = strchr(input, ' '); // find first space after "FILTER OFFICERS"
+            if (rest != NULL)
+            {
+                rest = strchr(rest + 1, ' '); // skip to after "OFFICERS"
+            }
+
+            if (rest != NULL)
+            {
+                while (*rest == ' ')
+                    rest++;
+                processFilterMessages(sntrph, rest);
                 return;
             }
         }
