@@ -9,26 +9,160 @@
 #include <time.h>
 #include <conio.h>
 // Case-insensitive comparison
-int ci_strncmp(const char *a, const char *b, size_t len) {
-    for (size_t i = 0; i < len; i++) {
+// HELPER FUNCTION
+int ci_strncmp(const char *a, const char *b, size_t len)
+{
+    for (size_t i = 0; i < len; i++)
+    {
         char ca = tolower((unsigned char)a[i]);
         char cb = tolower((unsigned char)b[i]);
-        if (ca != cb) return ca - cb;
-        if (ca == '\0') break;
+        if (ca != cb)
+            return ca - cb;
+        if (ca == '\0')
+            break;
+    }
+    return 0;
+}
+// HELPER FUNCTION
+int evalPersonCondition(Person *p, const char *field, const char *value)
+{
+    if (strcmp(field, "first_name") == 0)
+        return strcmp(p->first_name, value) == 0;
+    if (strcmp(field, "last_name") == 0)
+        return strcmp(p->last_name, value) == 0;
+    if (strcmp(field, "status") == 0)
+        return strcmp(p->status, value) == 0;
+    return 0;
+}
+
+int evalOfficerCondition(Officer *o, const char *field, const char *value)
+{
+    if (strcmp(field, "first_name") == 0)
+        return strcmp(o->base->first_name, value) == 0;
+    if (strcmp(field, "last_name") == 0)
+        return strcmp(o->base->last_name, value) == 0;
+    if (strcmp(field, "status") == 0)
+        return strcmp(o->base->status, value) == 0;
+    if (strcmp(field, "clearance") == 0)
+    {
+        char op = value[0];
+        // =, >=, >, <, <=
+        char v = value[1];
+        if (isdigit(v))
+        {
+            int int_value = atoi(&value[1]);
+            switch (op)
+            {
+            case '>':
+                return o->clearance > int_value;
+                break;
+            case '<':
+                return o->clearance < int_value;
+                break;
+            case '=':
+                return o->clearance == int_value;
+                break;
+            }
+        }
+        else
+        {
+            char lop[3];
+            strncpy(lop, value, 2);
+            lop[2] = '\0';
+
+            int int_value = atoi(&value[2]);
+            if (strcmp(lop, ">=") == 0)
+            {
+                return o->clearance >= int_value;
+            }
+            else if (strcmp(lop, "<=") == 0)
+            {
+                return o->clearance <= int_value;
+            }
+        }
     }
     return 0;
 }
 
+int evalCaseCondition(CaseFile *c, const char *field, const char *value)
+{
+    if (strcmp(field, "lead") == 0)
+        return strcmp(c->lead, value) == 0;
+    if (strcmp(field, "type") == 0)
+        return strcmp(c->type, value) == 0;
+    if (strcmp(field, "status") == 0)
+        return strcmp(c->status, value) == 0;
+    if (strcmp(field, "locked") == 0)
+        return c->is_locked;
+    if (strcmp(field, "city") == 0)
+        return strcmp(c->location->city, value) == 0;
+}
+
+int evalTrailCondition(AuditLog *a, const char *field, const char *value)
+{
+    if (strcmp(field, "officer") == 0)
+        return strcmp(a->officer->b_no, value) == 0;
+}
+int evalAddCondition(Address *a, const char *field, const char *value)
+{
+    if (strcmp(field, "city") == 0)
+        return strcmp(a->city, value) == 0;
+    if (strcmp(field, "zip") == 0)
+        return strcmp(a->zip_code, value) == 0;
+    if (strcmp(field, "case_count") == 0)
+    {
+        char op = value[0];
+        // =, >=, >, <, <=
+        char v = value[1];
+        if (isdigit(v))
+        {
+            int int_value = atoi(&value[1]);
+            switch (op)
+            {
+            case '>':
+                return a->case_count > int_value;
+                break;
+            case '<':
+                return a->case_count < int_value;
+                break;
+            case '=':
+                return a->case_count == int_value;
+                break;
+            }
+        }
+        else
+        {
+            char lop[3];
+            strncpy(lop, value, 2);
+            lop[2] = '\0';
+
+            int int_value = atoi(&value[2]);
+            if (strcmp(lop, ">=") == 0)
+            {
+                return a->case_count >= int_value;
+            }
+            else if (strcmp(lop, "<=") == 0)
+            {
+                return a->case_count <= int_value;
+            }
+        }
+    }
+}
 // Replacement strstr_w
-char *strstr_w(const char *haystack, const char *needle) {
-    if (!haystack || !needle) return NULL;
+char *strstr_w(const char *haystack, const char *needle)
+{
+    if (!haystack || !needle)
+        return NULL;
 
     size_t nlen = strlen(needle);
-    if (nlen == 0) return NULL;
+    if (nlen == 0)
+        return NULL;
 
     // For very short tokens, allow substring match
-    if (nlen <= 3) {
-        for (; *haystack; haystack++) {
+    if (nlen <= 3)
+    {
+        for (; *haystack; haystack++)
+        {
             if (ci_strncmp(haystack, needle, nlen) == 0)
                 return (char *)haystack;
         }
@@ -37,14 +171,17 @@ char *strstr_w(const char *haystack, const char *needle) {
 
     // For longer tokens, match full words only
     const char *p = haystack;
-    while (*p) {
+    while (*p)
+    {
         // Skip non-alphanumeric
-        while (*p && !isalnum(*p)) p++;
+        while (*p && !isalnum(*p))
+            p++;
 
         const char *word_start = p;
 
         // Move to end of word
-        while (*p && isalnum(*p)) p++;
+        while (*p && isalnum(*p))
+            p++;
         size_t word_len = p - word_start;
 
         if (word_len == nlen && ci_strncmp(word_start, needle, nlen) == 0)
@@ -182,7 +319,7 @@ void addEvidence(SNTRPH *sntrph)
     file_path[strcspn(file_path, "\n")] = 0;
     printf("> Enter any notes on your evidence: ");
     fgets(notes, sizeof(notes), stdin);
-    desc[strcspn(desc, "\n")] = 0;
+    notes[strcspn(notes, "\n")] = 0;
     for (int i = 0; i < 5; i++)
     {
         char buffer[50];
@@ -790,6 +927,28 @@ void viewOfficers(SNTRPH *sntrph)
     }
 }
 
+void viewLog( AuditLog *log)
+{
+    char officer_name[120];
+    snprintf(officer_name, sizeof(officer_name), "%s %s %s",
+             log->officer->title,
+             log->officer->base->first_name,
+             log->officer->base->last_name);
+
+    printf("--------------------------------------------------\n");
+    printf("           SAINT-RAPHAEL AUDIT TRAIL IMPRINT\n");
+    printf("--------------------------------------------------\n\n");
+
+    printf("FROM:        %s\n", officer_name);
+    printf("ACTION TYPE: %s\n", log->actionType);
+    printf("RECORD ID:   %s\n", log->record_id);
+    printf("DATE:        %s\n", log->timestamp);
+
+    printf("\n--------------------------------------------------\n");
+    printf("%s\n\n", log->action_description);
+    printf("--------------------------------------------------\n");
+    printf("[Press Enter to view next log]\n");
+}
 void auditTrail(LogList *logList)
 {
     for (int i = 0; i < logList->log_count; i++)
@@ -1037,7 +1196,58 @@ void sendMessage(Officer *sender, char *token, SNTRPH *sntrph)
         }
     }
 }
+void bulkMessage(Officer *sender, SNTRPH *sntrph, char *subject, char *body)
+{
+    for (int i = 0; i < sntrph->officerList.officer_count; i++)
+    {
+        if (sender->clearance + 2 <= sntrph->officerList.officers[i]->clearance)
+        {
+            PrintLine("[✗] You are not authorized to contact this officer.");
+        }
+        else if (strcmp(sender->b_no, sntrph->officerList.officers[i]->b_no) == 0)
+        {
+            continue;
+        }
+        else
+        {
+            GMessage *msg = malloc(sizeof(GMessage)); // ✅ allocate on heap
+            msg->sender = sender;
+            msg->recipient = sntrph->officerList.officers[i];
+            msg->clearance = msg->recipient->clearance;
+            msg->read = false;
 
+            char timestamp[20];
+            get_current_date(timestamp);
+            strcpy(msg->subject, subject);
+            strcpy(msg->timestamp, timestamp);
+            strcpy(msg->body, body);
+
+            sntrph->officerList.officers[i]->mailbox->messages[sntrph->officerList.officers[i]->mailbox->message_count++] = msg;
+
+            printf("MESSAGE SENT: %d, SUBJECT: %s, OFFICER: %s,| %s\n", i + 1, msg->subject, sntrph->officerList.officers[i]->b_no, msg->timestamp);
+        }
+    }
+
+    printf("--------------------------------------------------\n");
+}
+
+void hailGabriel(SNTRPH *sntrph)
+{
+
+    char subject[100];
+    printf("\nSubject:");
+    fgets(subject, sizeof(subject), stdin);
+
+    char body[1000];
+    printf("\nMessage:");
+    fgets(body, sizeof(body), stdin);
+
+    subject[strcspn(subject, "\n")] = 0;
+    body[strcspn(body, "\n")] = 0;
+
+    bulkMessage(sntrph->current_user, sntrph, subject, body);
+}
+// HELPER FUNCTION
 Evidence *checkEvidence(SNTRPH *sntrph, char *token)
 {
     for (int i = 0; i < sntrph->evidenceArchive.total_items; i++)
@@ -1050,6 +1260,7 @@ Evidence *checkEvidence(SNTRPH *sntrph, char *token)
     return false;
 }
 
+// HELPER FUNCTION
 void trim_newline(char *str)
 {
     size_t len = strlen(str);
@@ -1057,6 +1268,7 @@ void trim_newline(char *str)
         str[len - 1] = '\0';
 }
 
+// HELPER FUNCTION
 Person *findPersonById(SNTRPH *sntrph, const char *id)
 {
     for (int i = 0; i < sntrph->personlist.person_count; i++)
@@ -1128,6 +1340,7 @@ void addReport(SNTRPH *sntrph)
     printf("✅ Adoption report %s added successfully.\n", rep->report_id);
 }
 
+// HELPER FUNCTION
 Officer *check_officer(SNTRPH *sntrph, char *token)
 {
     printf("[CHECKPOINT C1] Entered check_officer()\n");
@@ -1273,6 +1486,7 @@ void deleteOfficer(SNTRPH *sntrph, char *off_id)
     }
 }
 
+// HELPER FUNCTION
 AuditLog *check_log(SNTRPH *sntrph, char *token)
 {
     if (sntrph->logList.log_count == 0)
@@ -1293,6 +1507,7 @@ AuditLog *check_log(SNTRPH *sntrph, char *token)
     }
 }
 
+// HELPER FUNCTION
 Address *check_addressP(SNTRPH *sntrph, char *person)
 {
     if (sntrph->addressList.address_count == 0)
@@ -1317,6 +1532,7 @@ Address *check_addressP(SNTRPH *sntrph, char *person)
     }
 }
 
+// HELPER FUNCTION
 Address *check_address(SNTRPH *sntrph, char *token)
 {
 
@@ -1339,6 +1555,7 @@ Address *check_address(SNTRPH *sntrph, char *token)
     }
 }
 
+// HELPER FUNCTION
 Person *check_person(SNTRPH *sntrph, char *token)
 {
     if (sntrph->personlist.person_count == 0)
@@ -1416,6 +1633,7 @@ Person *check_person(SNTRPH *sntrph, char *token)
         }
     }
 }
+// HELPER FUNCTION
 void random_date(char *date, size_t size)
 {
     // Generate a random date in the format YYYY-MM-DD
@@ -1426,6 +1644,7 @@ void random_date(char *date, size_t size)
     snprintf(date, size, "%04d-%02d-%02d", year, month, day);
 }
 
+// HELPER FUNCTION
 Officer *create_officer(const char *officer_id, const char *username, const char *password, const char *title, const char *first_name, const char *last_name, const char *badge_no, int clearance, SNTRPH *sntrph)
 {
     Officer *officer = malloc(sizeof(Officer));
@@ -1486,6 +1705,7 @@ Officer *create_officer(const char *officer_id, const char *username, const char
     return officer;
 }
 
+// HELPER FUNCTION
 Person *create_person(const char *first_name, const char *last_name, const char *DOB, const char *criminal_record, const char *relationship_status, SNTRPH *sntrph)
 {
     Person *person = malloc(sizeof(Person));
@@ -1520,6 +1740,7 @@ Person *create_person(const char *first_name, const char *last_name, const char 
 
     return person;
 }
+// HELPER FUNCTION
 Address *create_address(const char *street, const char *city, const char *zip_code, Person *person, SNTRPH *sntrph)
 {
     Address *address = malloc(sizeof(Address));
@@ -2153,7 +2374,112 @@ void searchResultsP(SNTRPH *sntrph, Person *matches[], int count)
         }
     }
 }
+void searchResultsA(SNTRPH *sntrph, Address *matches[], int count)
+{
 
+    int page = 0;
+    int total_pages = (count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while (1)
+    {
+        system("cls");
+        printf("\n--------------------------------------------------\n");
+        printf("            SAINT RAPHAEL EXPLORER SYSTEM - PEOPLE\n");
+        printf("--------------------------------------------------\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > count)
+        {
+            end = count;
+        }
+
+        for (int i = start; i < end; i++)
+        {
+            Address *address = matches[i];
+            printf("Address %d, ID: <%s>, %s %s | C: %s\n", i + 1, address->address_id, address->city, address->zip_code, address->case_count);
+        }
+        printf("--------------------------------------------------\n\n");
+        printf("[n] Next | [p] Prev | [q] Quit | [1-%d] View person\n> ", count);
+
+        fgets(input, sizeof(input), stdin);
+
+        if (tolower(input[0]) == 'q')
+        {
+            break;
+        }
+        else if (tolower(input[0]) == 'n' && page < total_pages - 1)
+        {
+            page++;
+        }
+        else if (tolower(input[0]) == 'p' && page > 0)
+        {
+            page--;
+        }
+        else
+        {
+            int choice_int = atoi(input);
+            if (choice_int > 0 && choice_int <= count)
+            {
+                viewAddress(matches[choice_int - 1]);
+            }
+        }
+    }
+}
+void searchResultsL(SNTRPH *sntrph, AuditLog *matches[], int count)
+{
+
+    int page = 0;
+    int total_pages = (count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while (1)
+    {
+        system("cls");
+        printf("\n--------------------------------------------------\n");
+        printf("            SAINT RAPHAEL EXPLORER SYSTEM - LOG\n");
+        printf("--------------------------------------------------\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > count)
+        {
+            end = count;
+        }
+
+        for (int i = start; i < end; i++)
+        {
+            AuditLog *log = matches[i];
+            printf("Log %d, ID: <%s>, %s| %s\n", i + 1, log->audit_id, log->actionType, log->timestamp);
+        }
+        printf("--------------------------------------------------\n\n");
+        printf("[n] Next | [p] Prev | [q] Quit | [1-%d] View person\n> ", count);
+
+        fgets(input, sizeof(input), stdin);
+
+        if (tolower(input[0]) == 'q')
+        {
+            break;
+        }
+        else if (tolower(input[0]) == 'n' && page < total_pages - 1)
+        {
+            page++;
+        }
+        else if (tolower(input[0]) == 'p' && page > 0)
+        {
+            page--;
+        }
+        else
+        {
+            int choice_int = atoi(input);
+            if (choice_int > 0 && choice_int <= count)
+            {
+                viewLog(matches[choice_int - 1]);
+            }
+        }
+    }
+}
 void searchPerson(SNTRPH *sntrph, char *token)
 {
     // Temporary array to store matched Person pointers
@@ -2166,7 +2492,10 @@ void searchPerson(SNTRPH *sntrph, char *token)
         if (strstr_w(current->DOB, token) != NULL ||
             strstr_w(current->first_name, token) != NULL ||
             strstr_w(current->last_name, token) != NULL ||
-            strstr_w(current->person_id, token) != NULL)
+            strstr_w(current->person_id, token) != NULL ||
+            strstr_w(current->address->city, token) != NULL ||
+            strstr_w(current->address->street, token) != NULL)
+
         {
             matches[match_count++] = current;
         }
@@ -2191,7 +2520,6 @@ void searchResultsO(SNTRPH *sntrph, Officer *matches[], int count)
 
     while (1)
     {
-        system("cls");
         printf("\n--------------------------------------------------\n");
         printf("            SAINT RAPHAEL EXPLORER SYSTEM - OFFICERS\n");
         printf("--------------------------------------------------\n");
@@ -2683,10 +3011,12 @@ void addDisciplinary(SNTRPH *sntrph, char *token)
     printf("[CHECKPOINT 6] No available slots for disciplinary actions\n");
 }
 
+// HELPER FUNCTION
 const char *random_name(const char *names[], int name_count)
 {
     return names[random_int(0, name_count - 1)];
 }
+// HELPER FUNCTION
 void random_address(char *street, char *city, char *zip_code)
 {
     // Example street names
@@ -2723,6 +3053,7 @@ void random_address(char *street, char *city, char *zip_code)
     snprintf(city, 128, "%s", borough);                               // Borough as city
     snprintf(zip_code, 128, "%s", zip);                               // Random ZIP code
 }
+// HELPER FUNCTION
 CaseFile *createCase(SNTRPH *sntrph, char *name, char *date, char *lead, char *summary, char *type, char *evidence_notes, bool locked, char *status)
 {
     CaseFile *file = malloc(sizeof(CaseFile));
@@ -3196,6 +3527,380 @@ void recoverArchived(SNTRPH *sntrph, char *token)
     }
 }
 
+// Returns dynamically allocated array of Person* that match filters, and sets filteredCount
+Person **filterPeople(SNTRPH *sntrph, const char **fields, const char **values, const char **operators, int conditionsCount, int *filteredCount)
+{
+    PersonList *personlist = &sntrph->personlist;
+    Person **filtered = malloc(personlist->person_count * sizeof(Person *));
+    *filteredCount = 0;
+
+    for (int i = 0; i < personlist->person_count; i++)
+    {
+        Person *p = personlist->person_list[i];
+        int match = evalPersonCondition(p, fields[0], values[0]);
+
+        for (int c = 1; c < conditionsCount; c++)
+        {
+            if (strcmp(operators[c - 1], "AND") == 0)
+                match = match && evalPersonCondition(p, fields[c], values[c]);
+            else if (strcmp(operators[c - 1], "OR") == 0)
+                match = match || evalPersonCondition(p, fields[c], values[c]);
+        }
+
+        if (match)
+            filtered[(*filteredCount)++] = p;
+    }
+
+    filtered = realloc(filtered, (*filteredCount) * sizeof(Person *));
+    return filtered;
+}
+
+Officer **filterOfficers(SNTRPH *sntrph, const char **fields, char **values, const char **ops, int conditionsCount, int *filteredCount)
+{
+    OfficerList *offList = &sntrph->officerList;
+    Officer **filtered = malloc(offList->officer_count * sizeof(Person *));
+    *filteredCount = 0;
+
+    for (int i = 0; i < offList->officer_count; i++)
+    {
+        Officer *off = offList->officers[i];
+        int match = evalOfficerCondition(off, fields[0], values[0]);
+
+        for (int c = 1; c < conditionsCount; c++)
+        {
+            if (strcmp(ops[c - 1], "AND") == 0)
+                match = match && evalOfficerCondition(off, fields[c], values[c]);
+            else if (strcmp(ops[c - 1], "OR") == 0)
+                match = match || evalOfficerCondition(off, fields[c], values[c]);
+        }
+        if (match)
+        {
+            filtered[(*filteredCount)++] = off;
+        }
+    }
+    filtered = realloc(filtered, (*filteredCount) * sizeof(Person *));
+    return filtered;
+}
+CaseFile **filterCases(SNTRPH *sntrph, const char **fields, char **values, const char **ops, int conditionsCount, int *filteredCount)
+{
+    CaseList *caseList = &sntrph->caseList;
+    CaseFile **filtered = malloc(caseList->case_count * sizeof(CaseFile *));
+    *filteredCount = 0;
+
+    for (int i = 0; i < caseList->case_count; i++)
+    {
+        CaseFile *cf = caseList->cases[i];
+        int match = evalCaseCondition(cf, fields[0], values[0]);
+
+        for (int c = 1; c < conditionsCount; c++)
+        {
+            if (strcmp(ops[c - 1], "AND") == 0)
+                match = match && evalCaseCondition(cf, fields[c], values[c]);
+            else if (strcmp(ops[c - 1], "OR") == 0)
+                match = match || evalCaseCondition(cf, fields[c], values[c]);
+        }
+        if (match)
+        {
+            filtered[(*filteredCount)++] = cf;
+        }
+    }
+    filtered = realloc(filtered, (*filteredCount) * sizeof(CaseFile *));
+    return filtered;
+}
+
+AuditLog **filterLogs(SNTRPH *sntrph, const char **fields,  char **values, const char **ops, int conditionsCount, int *filteredCount)
+{
+    LogList *logList = &sntrph->logList;
+    AuditLog **filtered = malloc(logList->log_count * sizeof(AuditLog *));
+    *filteredCount = 0;
+    for (int i = 0; i < logList->log_count; i++)
+    {
+        AuditLog *log = logList->logs[i];
+        int match = evalTrailCondition(log, fields[0], values[0]);
+        for (int c = 1; c < conditionsCount; c++)
+        {
+
+            if (strcmp(ops[c - 1], "AND") == 0)
+                match = match && evalTrailCondition(log, fields[c], values[c]);
+            else if (strcmp(ops[c - 1], "OR") == 0)
+                match = match || evalTrailCondition(log, fields[c], values[c]);
+        }
+        if (match)
+        {
+            filtered[(*filteredCount)++] = log;
+        }
+    }
+
+    filtered = realloc(filtered, (*filteredCount) * sizeof(AuditLog *));
+    return filtered;
+}
+Address **filterAdds(SNTRPH *sntrph, const char **fields, char **values, const char **ops, int conditionsCount, int *filteredCount)
+{
+    AddressList *addList = &sntrph->addressList;
+    Address **filtered = malloc(addList->address_count * sizeof(Address *));
+    *filteredCount = 0;
+
+    for (int i = 0; i < addList->address_count; i++)
+    {
+        Address *add = addList->addresses[i];
+        int match = evalAddCondition(add, fields[0], values[0]);
+        for (int c = 1; c < conditionsCount; c++)
+        {
+            if (strcmp(ops[c - 1], "AND") == 0)
+                match = match && evalAddCondition(add, fields[c], values[c]);
+            else if (strcmp(ops[c - 1], "OR") == 0)
+                match = match || evalAddCondition(add, fields[c], values[c]);
+        }
+        if (match)
+        {
+            filtered[(*filteredCount)++] = add;
+        }
+    }
+    filtered = realloc(filtered, (*filteredCount) * sizeof(Person *));
+    return filtered;
+}
+void processFilterPeople(SNTRPH *sntrph, char *input)
+{
+    // Parses input starting from after "FILTER PEOPLE"
+    // Example input: "--field first_name --value John AND --field status --value ALIVE"
+
+    const char *fields[10];
+    const char *values[10];
+    const char *operators[9]; // One less than conditions
+    int condCount = 0;
+    int opCount = 0;
+
+    char *token = strtok(input, " ");
+    while (token != NULL)
+    {
+        if (strcmp(token, "--field") == 0)
+        {
+            token = strtok(NULL, " ");
+            fields[condCount] = token;
+        }
+        else if (strcmp(token, "--value") == 0)
+        {
+            token = strtok(NULL, " ");
+            values[condCount] = token;
+            condCount++;
+        }
+        else if (strcmp(token, "AND") == 0 || strcmp(token, "OR") == 0)
+        {
+            operators[opCount++] = token;
+        }
+        token = strtok(NULL, " ");
+    }
+
+    if (condCount == 0)
+    {
+        printf("No filter conditions provided.\n");
+        return;
+    }
+
+    int filteredCount = 0;
+    Person **filteredPeople = filterPeople(sntrph, fields, values, operators, condCount, &filteredCount);
+
+    searchResultsP(sntrph, filteredPeople, filteredCount);
+
+    free(filteredPeople);
+}
+void processFilterOfficer(SNTRPH *sntrph, char *input)
+{
+    // Parses input starting from after "FILTER PEOPLE"
+    // Example input: "--field first_name --value John AND --field status --value ALIVE"
+
+    const char *fields[10];
+    char *values[10];
+    const char *operators[9]; // One less than conditions
+    int condCount = 0;
+    int opCount = 0;
+
+    char *token = strtok(input, " ");
+    while (token != NULL)
+    {
+        if (strcmp(token, "--field") == 0)
+        {
+            token = strtok(NULL, " ");
+            fields[condCount] = token;
+        }
+        else if (strcmp(token, "--value") == 0)
+        {
+            token = strtok(NULL, " ");
+            values[condCount] = malloc(strlen(token) + 1);
+            strcpy(values[condCount], token);
+
+            printf("Debug: Value: %s", token);
+            condCount++;
+        }
+        else if (strcmp(token, "AND") == 0 || strcmp(token, "OR") == 0)
+        {
+            operators[opCount++] = token;
+        }
+        token = strtok(NULL, " ");
+    }
+
+    if (condCount == 0)
+    {
+        printf("No filter conditions provided.\n");
+        return;
+    }
+
+    int filteredCount = 0;
+    Officer **filteredOfficers = filterOfficers(sntrph, fields, values, operators, condCount, &filteredCount);
+    searchResultsO(sntrph, filteredOfficers, filteredCount);
+    for (int i = 0; i < condCount; i++)
+    {
+        free(values[i]);
+    }
+
+    free(filteredOfficers);
+}
+// HELPER FUNCTION
+void processFilterCases(SNTRPH *sntrph, char *input)
+{
+
+    const char *fields[10];
+    char *values[10];
+    const char *operators[9]; // One less than conditions
+    int condCount = 0;
+    int opCount = 0;
+
+    char *token = strtok(input, " ");
+    while (token != NULL)
+    {
+        if (strcmp(token, "--field") == 0)
+        {
+            token = strtok(NULL, " ");
+            fields[condCount] = token;
+        }
+        else if (strcmp(token, "--value") == 0)
+        {
+            token = strtok(NULL, " ");
+            values[condCount] = token;
+            condCount++;
+        }
+        else if (strcmp(token, "AND") == 0 || strcmp(token, "OR") == 0)
+        {
+            operators[opCount++] = token;
+        }
+        token = strtok(NULL, " ");
+    }
+
+    if (condCount == 0)
+    {
+        printf("No filter conditions provided.\n");
+        return;
+    }
+
+    int filteredCount = 0;
+    CaseFile **filteredCases = filterCases(sntrph, fields, values, operators, condCount, &filteredCount);
+    searchResultsC(sntrph, filteredCases, filteredCount);
+    free(filteredCases);
+}
+
+void processFilterAdd(SNTRPH *sntrph, char *input)
+{
+    // Parses input starting from after "FILTER PEOPLE"
+    // Example input: "--field first_name --value John AND --field status --value ALIVE"
+
+    const char *fields[10];
+    char *values[10];
+    const char *operators[9]; // One less than conditions
+    int condCount = 0;
+    int opCount = 0;
+
+    char *token = strtok(input, " ");
+    while (token != NULL)
+    {
+        if (strcmp(token, "--field") == 0)
+        {
+            token = strtok(NULL, " ");
+            fields[condCount] = token;
+        }
+        else if (strcmp(token, "--value") == 0)
+        {
+            token = strtok(NULL, " ");
+            values[condCount] = malloc(strlen(token) + 1);
+            strcpy(values[condCount], token);
+
+            printf("Debug: Value: %s", token);
+            condCount++;
+        }
+        else if (strcmp(token, "AND") == 0 || strcmp(token, "OR") == 0)
+        {
+            operators[opCount++] = token;
+        }
+        token = strtok(NULL, " ");
+    }
+
+    if (condCount == 0)
+    {
+        printf("No filter conditions provided.\n");
+        return;
+    }
+
+    int filteredCount = 0;
+    Address **filteredAddresses = filterAdds(sntrph, fields, values, operators, condCount, &filteredCount);
+    searchResultsA(sntrph, filteredAddresses, filteredCount);
+    for (int i = 0; i < condCount; i++)
+    {
+        free(values[i]);
+    }
+
+    free(filteredAddresses);
+}
+void processFilterLog(SNTRPH *sntrph, char *input)
+{
+    // Parses input starting from after "FILTER PEOPLE"
+    // Example input: "--field first_name --value John AND --field status --value ALIVE"
+
+    const char *fields[10];
+    char *values[10];
+    const char *operators[9]; // One less than conditions
+    int condCount = 0;
+    int opCount = 0;
+
+    char *token = strtok(input, " ");
+    while (token != NULL)
+    {
+        if (strcmp(token, "--field") == 0)
+        {
+            token = strtok(NULL, " ");
+            fields[condCount] = token;
+        }
+        else if (strcmp(token, "--value") == 0)
+        {
+            token = strtok(NULL, " ");
+            values[condCount] = malloc(strlen(token) + 1);
+            strcpy(values[condCount], token);
+
+            printf("Debug: Value: %s", token);
+            condCount++;
+        }
+        else if (strcmp(token, "AND") == 0 || strcmp(token, "OR") == 0)
+        {
+            operators[opCount++] = token;
+        }
+        token = strtok(NULL, " ");
+    }
+
+    if (condCount == 0)
+    {
+        printf("No filter conditions provided.\n");
+        return;
+    }
+
+    int filteredCount = 0;
+    AuditLog **filteredLogs = filterLogs(sntrph, fields, values, operators, condCount, &filteredCount);
+    searchResultsL(sntrph, filteredLogs, filteredCount);
+    for (int i = 0; i < condCount; i++)
+    {
+        free(values[i]);
+    }
+
+    free(filteredLogs);
+}
+// TODO: FILTER EVIDENCE, ADOPTION REPORTS, ADDRESSES
 void seed_officers(int count, SNTRPH *sntrph)
 {
     // Example random first and last names
@@ -3276,6 +3981,7 @@ void seed_officers(int count, SNTRPH *sntrph)
                first_name, last_name, title, clearance, b_no, street);
     }
 }
+// HELPER FUNCTION
 void seed_people(int count, SNTRPH *sntrph)
 {
     // Example random first and last names
@@ -3342,6 +4048,7 @@ void seed_people(int count, SNTRPH *sntrph)
     }
 }
 
+// HELPER FUNCTION
 void seed_evidence(int count, SNTRPH *sntrph)
 {
     printf("[DEBUG] Seeding %d evidence items...\n", count);
@@ -3377,7 +4084,7 @@ void seed_evidence(int count, SNTRPH *sntrph)
         printf("[DEBUG] Evidence name: %s | Type: %s | Status: %s\n", ev->name, ev->type, ev->status);
         printf("[DEBUG] Assigning custody chain...\n");
 
-        int random = random_int(1,5);
+        int random = random_int(1, 5);
         for (int j = 0; j < random; j++)
         {
             if (sntrph->officerList.officer_count > 0)
@@ -3403,6 +4110,7 @@ void seed_evidence(int count, SNTRPH *sntrph)
     printf("[DEBUG] Evidence seeding completed. Total items: %d\n", sntrph->evidenceArchive.total_items);
 }
 
+// HELPER FUNCTION
 void seed_cases(int count, SNTRPH *sntrph)
 {
     const char *types[] = {
@@ -3499,6 +4207,21 @@ void processCommand(SNTRPH *sntrph, char *input)
             }
         }
     }
+    else if (strcmp(token, "HAIL") == 0)
+    {
+        char *token_2 = strtok(NULL, delimiters);
+        if (strcmp(token_2, "MESSAGE") == 0)
+        {
+            if (sntrph->current_user->clearance < 3)
+            {
+                printf("!! ACCESS DENEID: INSUFFICIENT CLEARANCE !!");
+                printf("!! ATTEMPT LOGGED !!");
+                return;
+            }
+
+            hailGabriel(sntrph);
+        }
+    }
     else if (strcmp(token, "LOG") == 0)
     {
         char *token_2 = strtok(NULL, delimiters);
@@ -3524,13 +4247,14 @@ void processCommand(SNTRPH *sntrph, char *input)
         }
         else if (strcmp(token_2, "EVIDENCE") == 0)
         {
-        char *token_3 = strtok(NULL, delimiters);
-        size_t len = strlen(token_3);
-        if(len == 5){
-           Evidence *ev = checkEvidence(sntrph, token_3);
-           printEvidence(ev);
-           return;
-        }
+            char *token_3 = strtok(NULL, delimiters);
+            size_t len = strlen(token_3);
+            if (len == 5)
+            {
+                Evidence *ev = checkEvidence(sntrph, token_3);
+                printEvidence(ev);
+                return;
+            }
             viewEvidence(sntrph);
         }
         else if (strcmp(token_2, "ADDRESSES") == 0)
@@ -3712,7 +4436,91 @@ void processCommand(SNTRPH *sntrph, char *input)
             searchCase(sntrph, token_3);
         }
     }
+    else if (strcmp(token, "FILTER") == 0)
+    {
+        char *token_2 = strtok(NULL, delimiters);
+        if (token_2 != NULL && strcmp(token_2, "PEOPLE") == 0)
+        {
+            // The rest of input after "FILTER PEOPLE"
+            char *rest = strtok(NULL, "\n"); // strtok continues from last position
+            if (rest != NULL)
+            {
+                while (*rest == ' ')
+                    rest++; // skip leading spaces
+                processFilterPeople(sntrph, rest);
+                return;
+            }
+        }
+        else if (token_2 != NULL && strcmp(token_2, "OFFICERS") == 0)
+        {
+            char *rest = strchr(input, ' '); // find first space after "FILTER OFFICERS"
+            if (rest != NULL)
+            {
+                rest = strchr(rest + 1, ' '); // skip to after "OFFICERS"
+            }
 
+            if (rest != NULL)
+            {
+                while (*rest == ' ')
+                    rest++;
+                processFilterOfficer(sntrph, rest);
+                return;
+            }
+        }
+        else if (token_2 != NULL && strcmp(token_2, "CASES") == 0)
+        {
+            char *rest = strchr(input, ' '); // find first space after "FILTER OFFICERS"
+            if (rest != NULL)
+            {
+                rest = strchr(rest + 1, ' '); // skip to after "OFFICERS"
+            }
+
+            if (rest != NULL)
+            {
+                while (*rest == ' ')
+                    rest++;
+                processFilterCases(sntrph, rest);
+                return;
+            }
+        }
+        else if (token_2 != NULL && strcmp(token_2, "ADDRESSES") == 0)
+        {
+            char *rest = strchr(input, ' '); // find first space after "FILTER OFFICERS"
+            if (rest != NULL)
+            {
+                rest = strchr(rest + 1, ' '); // skip to after "OFFICERS"
+            }
+
+            if (rest != NULL)
+            {
+                while (*rest == ' ')
+                    rest++;
+                processFilterAdd(sntrph, rest);
+                return;
+            }
+        }
+          else if (token_2 != NULL && strcmp(token_2, "TRAIL") == 0)
+        {
+            char *rest = strchr(input, ' '); // find first space after "FILTER OFFICERS"
+            if (rest != NULL)
+            {
+                rest = strchr(rest + 1, ' '); // skip to after "OFFICERS"
+            }
+
+            if (rest != NULL)
+            {
+                while (*rest == ' ')
+                    rest++;
+                processFilterLog(sntrph, rest);
+                return;
+            }
+        }
+        else
+        {
+            printf("No filter parameters provided.\n");
+            return;
+        }
+    }
     else
     {
         printf("!! INVALID COMMAND!! : %s", input);
@@ -3954,7 +4762,7 @@ int main()
     populateDB(&sntrph);
     startMenu(&sntrph);
 
-    char input[50];
+    char input[80] = "";
     while (true)
     {
         printf("\n> Enter command: ");
@@ -3965,12 +4773,23 @@ int main()
             printf("Invalid command.\n");
             continue;
         }
-        input[strcspn(input, "\n")] = 0; // Remove newline
+        size_t len = strlen(input);
+        if (len > 0 && input[len - 1] == '\n')
+            input[len - 1] = '\0';
+
+        // If input is too long, clear stdin buffer
+        if (len == sizeof(input) - 1 && input[len - 1] != '\n')
+        {
+            int ch;
+            while ((ch = getchar()) != '\n' && ch != EOF)
+                ;
+        }
         if (strcmp(input, "quit") == 0)
         {
             free_SNTRPH(&sntrph);
             break;
         }
+        printf("Debug: Value: %s", input);
         processCommand(&sntrph, input);
     }
 
