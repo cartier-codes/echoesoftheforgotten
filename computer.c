@@ -34,13 +34,17 @@ int evalPersonCondition(Person *p, const char *field, const char *value)
         return strcmp(p->status, value) == 0;
     return 0;
 }
-int evalGCondition(GMessage *m, const char *field, const char *value){
-    if(strcmp(field, "sender") == 0){
+int evalGCondition(GMessage *m, const char *field, const char *value)
+{
+    if (strcmp(field, "sender") == 0)
+    {
         return strcmp(m->sender->b_no, value) == 0;
     }
-    if(strcmp(field, "read") == 0){
-       return atoi(value) ? m->read : !m->read;
+    if (strcmp(field, "read") == 0)
+    {
+        return atoi(value) ? m->read : !m->read;
     }
+    return 0;
 }
 
 int evalOfficerCondition(Officer *o, const char *field, const char *value)
@@ -104,14 +108,17 @@ int evalCaseCondition(CaseFile *c, const char *field, const char *value)
         return c->is_locked;
     if (strcmp(field, "city") == 0)
         return strcmp(c->location->city, value) == 0;
+    return 0;
 }
 
 int evalTrailCondition(AuditLog *a, const char *field, const char *value)
 {
-    if (strcmp(field, "officer") == 0){
+    if (strcmp(field, "officer") == 0)
+    {
         printf("Reached.\n");
         return strcmp(a->officer->b_no, value) == 0;
     }
+    return 0;
 }
 int evalAddCondition(Address *a, const char *field, const char *value)
 {
@@ -157,6 +164,7 @@ int evalAddCondition(Address *a, const char *field, const char *value)
             }
         }
     }
+    return 0;
 }
 // Replacement strstr_w
 char *strstr_w(const char *haystack, const char *needle)
@@ -276,6 +284,77 @@ void addLog(SNTRPH *sntrph, char *type, char *r_id, Officer *officer, char *desc
 
     sntrph->logList.logs[sntrph->logList.log_count++] = log;
 }
+
+void addIncident(SNTRPH *sntrph){
+    Incident *idnt = malloc(sizeof(Incident));
+    char idnt_id[10];
+
+    if (sntrph->incidentList.i_count == 0) {
+        strcpy(idnt_id, "I000");
+        strcpy(idnt->incident_id, idnt_id);
+    } else {
+        strcpy(idnt_id, sntrph->incidentList.incidents[sntrph->incidentList.i_count - 1]->incident_id);
+        increment_id(idnt_id);
+        strcpy(idnt->incident_id, idnt_id);
+    }
+
+    char date[15];
+    printf("\n> Enter the date of the incident: ");
+    fgets(date, sizeof(date), stdin);
+    date[strcspn(date, "\n")] = 0;
+
+    char time[6];
+    printf("\n Enter the time of the incident: ");
+    fgets(time, sizeof(time), stdin);
+    time[strcspn(time, "\n")] = 0;
+
+    // Flush stray newline
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {}
+
+    char type[6];
+    printf("\n> Enter the type of incident: ");
+    fgets(type, sizeof(type), stdin);
+    type[strcspn(type, "\n")] = 0;
+
+    while ((c = getchar()) != '\n' && c != EOF) {}
+
+    char location[100];
+    printf("\n> Enter the location of the incident: ");
+    fgets(location, sizeof(location), stdin);
+    location[strcspn(location, "\n")] = 0;
+
+    char description[256];
+    printf("\n> Enter the description of the incident: ");
+    fgets(description, sizeof(description), stdin);
+    description[strcspn(description, "\n")] = 0;
+
+    char lead[10];
+    printf("\n> Enter the lead of the incident: ");
+    fgets(lead, sizeof(lead), stdin);
+    lead[strcspn(lead, "\n")] = 0;
+
+    while ((c = getchar()) != '\n' && c != EOF) {}
+
+    char status[20];
+    printf("\n> Enter the status: ");
+    fgets(status, sizeof(status), stdin);
+    status[strcspn(status, "\n")] = 0;
+
+    strcpy(idnt->date, date);
+    strcpy(idnt->time, time);
+    strcpy(idnt->type, type);
+    strcpy(idnt->location, location);
+    strcpy(idnt->description, description);
+    strcpy(idnt->lead, lead);
+    strcpy(idnt->status, status);
+
+    // Correct assignment
+    sntrph->incidentList.incidents[sntrph->incidentList.i_count++] = idnt;
+
+    printf("INCIDENT ADDED.\n");
+}
+
 void PrintLine(char *text)
 {
     printf("%s\n", text);
@@ -663,6 +742,59 @@ void viewPerson(Person *person)
     printf("[Press Enter to EXIT]\n");
     getchar();
 }
+
+void viewReport(AdoptionReport *report)
+{
+    printf("--------------------------------------------------\n");
+    printf("           SAINT-RAPHAEL ADOPTION REPORT TRAIL VIEW\n");
+    printf("--------------------------------------------------\n\n");
+
+    printf("CHILD ID:        %s\n", report->child->person_id);
+    printf("FIRST NAME:        %s\n", report->child->first_name);
+    printf("LAST NAME:        %s\n", report->child->last_name);
+    printf("--------------------------------------------------\n\n");
+    printf("DOB:        %s\n", report->child->DOB);
+    printf("--------------------------------------------------\n\n");
+    // For adoptive parents
+    if (report->adoptive_parents[0] != NULL && report->adoptive_parents[1] != NULL)
+    {
+        printf("ADOPTIVE PARENTS:        %s %s, %s %s\n",
+               report->adoptive_parents[0]->first_name, report->adoptive_parents[0]->last_name,
+               report->adoptive_parents[1]->first_name, report->adoptive_parents[1]->last_name);
+    }
+    else if (report->adoptive_parents[0] != NULL && report->adoptive_parents[1] == NULL)
+    {
+        printf("ADOPTIVE PARENT:         %s %s\n",
+               report->adoptive_parents[0]->first_name, report->adoptive_parents[0]->last_name);
+    }
+
+    // For original parents
+    if (report->original_parents[0] != NULL && report->original_parents[1] != NULL)
+    {
+        printf("ORIGINAL PARENTS:        %s %s, %s %s\n",
+               report->original_parents[0]->first_name, report->original_parents[0]->last_name,
+               report->original_parents[1]->first_name, report->original_parents[1]->last_name);
+    }
+    else if (report->original_parents[0] != NULL && report->original_parents[1] == NULL)
+    {
+        printf("ORIGINAL PARENT:         %s %s\n",
+               report->original_parents[0]->first_name, report->original_parents[0]->last_name);
+    }
+
+    printf("--------------------------------------------------\n");
+    if (report->adoptive_parents[0]->address != NULL)
+    {
+        printf("ADDRESS:        %s, %s, %s\n", report->adoptive_parents[0]->address->street, report->adoptive_parents[0]->address->city, report->adoptive_parents[0]->address->zip_code);
+    }
+    else
+    {
+        printf("ADDRESS:        No address assigned.\n");
+    }
+    printf("--------------------------------------------------\n");
+    printf("[Press Enter to EXIT]\n");
+    getchar();
+}
+
 void viewAddress(Address *address)
 {
     printf("--------------------------------------------------\n");
@@ -937,7 +1069,7 @@ void viewOfficers(SNTRPH *sntrph)
     }
 }
 
-void viewLog( AuditLog *log)
+void viewLog(AuditLog *log)
 {
     char officer_name[120];
     snprintf(officer_name, sizeof(officer_name), "%s %s %s",
@@ -957,7 +1089,46 @@ void viewLog( AuditLog *log)
     printf("\n--------------------------------------------------\n");
     printf("%s\n\n", log->action_description);
     printf("--------------------------------------------------\n");
+
 }
+void viewIncident(Incident *i)
+{
+    printf("\n--------------------------------------------------\n");
+    printf("           SAINT-RAPHAEL INCIDENT TRAIL IMPRINT\n");
+    printf("--------------------------------------------------\n\n");
+
+    printf("FROM:        %s\n", i->lead);
+    printf("TYPE: %s\n", i->type);
+    printf("DESCRIPTION:   %s\n", i->description);
+    printf("STATUS:        %s\n", i->status);
+    printf("--------------------------------------------------\n");
+    printf("LOCATION:        %s\n", i->location);
+    printf("\n--------------------------------------------------\n");
+    printf("DATE: %s , %s\n\n", i->date, i->time);
+    printf("--------------------------------------------------\n");
+}
+
+void viewIncidents(SNTRPH *sntrph){
+    int count = sntrph->caseList.case_count;
+    int page = 0;
+    int total = (count + PAGE_SIZE - 1) / PAGE_SIZE;
+    char input[10];
+
+    while(1){
+        system("cls");
+        printf("--------------------------------------------------\n");
+        printf("           SAINT-RAPHAEL INCIDENTS TRAIL VIEW\n");
+        printf("--------------------------------------------------\n\n");
+
+        int start = page * PAGE_SIZE;
+        int end = start + PAGE_SIZE;
+        if (end > count)
+        {
+            end = count;
+        }
+    }
+}
+
 void auditTrail(LogList *logList)
 {
     for (int i = 0; i < logList->log_count; i++)
@@ -1515,7 +1686,25 @@ AuditLog *check_log(SNTRPH *sntrph, char *token)
         }
     }
 }
-
+AdoptionReport *check_report(SNTRPH *sntrph, char *token)
+{
+    if (sntrph->reportList.report_count == 0)
+    {
+        PrintLine("!! AUDIT TRAIL IS EMPTY !!");
+    }
+    if (strcmp(token, "") == 0)
+    {
+        PrintLine("!! TOKEN IS EMPTY !!");
+        return NULL;
+    }
+    for (int i = 0; i < sntrph->reportList.report_count; i++)
+    {
+        if (strcmp(token, sntrph->reportList.reports[i]->report_id) == 0)
+        {
+            return sntrph->reportList.reports[i];
+        }
+    }
+}
 // HELPER FUNCTION
 Address *check_addressP(SNTRPH *sntrph, char *person)
 {
@@ -1537,6 +1726,23 @@ Address *check_addressP(SNTRPH *sntrph, char *person)
             {
                 return sntrph->addressList.addresses[i];
             }
+        }
+    }
+}
+
+Incident *check_incident(SNTRPH *sntrph, char *token){
+    if(sntrph->incidentList.i_count == 0){
+        PrintLine("!! ADDRESSES ARE EMPTY !!");
+        return NULL;
+    }
+    if (strcmp(token, "") == 0)
+    {
+        PrintLine("!! TOKEN IS EMPTY !!");
+        return NULL;
+    }
+    for(int i = 0; i < sntrph->incidentList.i_count; i++){
+        if(strcmp(token, sntrph->incidentList.incidents[i]->incident_id) == 0){
+            return sntrph->incidentList.incidents[i];
         }
     }
 }
@@ -2394,7 +2600,7 @@ void searchResultsA(SNTRPH *sntrph, Address *matches[], int count)
     {
         system("cls");
         printf("\n--------------------------------------------------\n");
-        printf("            SAINT RAPHAEL EXPLORER SYSTEM - PEOPLE\n");
+        printf("            SAINT RAPHAEL EXPLORER SYSTEM - ADDRESSES\n");
         printf("--------------------------------------------------\n");
 
         int start = page * PAGE_SIZE;
@@ -2500,7 +2706,7 @@ void searchResultsM(SNTRPH *sntrph, GMessage *matches[], int count)
     {
         system("cls");
         printf("\n--------------------------------------------------\n");
-        printf("            SAINT RAPHAEL EXPLORER SYSTEM - LOG\n");
+        printf("            SAINT RAPHAEL EXPLORER SYSTEM - SERAPH\n");
         printf("--------------------------------------------------\n");
 
         int start = page * PAGE_SIZE;
@@ -2739,7 +2945,7 @@ void searchResultsC(SNTRPH *sntrph, CaseFile *matches[], int count)
     {
         system("cls");
         printf("\n--------------------------------------------------\n");
-        printf("            SAINT RAPHAEL EXPLORER SYSTEM - OFFICERS\n");
+        printf("            SAINT RAPHAEL EXPLORER SYSTEM - CASE\n");
         printf("--------------------------------------------------\n");
 
         int start = page * PAGE_SIZE;
@@ -3695,7 +3901,7 @@ CaseFile **filterCases(SNTRPH *sntrph, const char **fields, char **values, const
     return filtered;
 }
 
-AuditLog **filterLogs(SNTRPH *sntrph, const char **fields,  char **values, const char **ops, int conditionsCount, int *filteredCount)
+AuditLog **filterLogs(SNTRPH *sntrph, const char **fields, char **values, const char **ops, int conditionsCount, int *filteredCount)
 {
     LogList *logList = &sntrph->logList;
     AuditLog **filtered = malloc(logList->log_count * sizeof(AuditLog *));
@@ -3747,9 +3953,8 @@ Address **filterAdds(SNTRPH *sntrph, const char **fields, char **values, const c
     return filtered;
 }
 
-
-void processFilterMessages(SNTRPH *sntrph, char *input){
-
+void processFilterMessages(SNTRPH *sntrph, char *input)
+{
 
     const char *fields[10];
     const char *values[10];
@@ -4377,6 +4582,16 @@ void processCommand(SNTRPH *sntrph, char *input)
         {
             ViewMailbox(sntrph);
         }
+        else if(strcmp(token_2, "INCIDENT") == 0){
+            char *token_3 = strtok(NULL,delimiters);
+            Incident *i = check_incident(sntrph, token_3);
+            viewIncident(i);
+        }
+        else if(strcmp(token_2, "INCIDENTS") == 0){
+            char *token_3 = strtok(NULL,delimiters);
+            Incident *i = check_incident(sntrph, token_3);
+            viewIncident(i);
+        }
         else if (strcmp(token_2, "EVIDENCE") == 0)
         {
             char *token_3 = strtok(NULL, delimiters);
@@ -4440,8 +4655,13 @@ void processCommand(SNTRPH *sntrph, char *input)
         {
             viewCases(sntrph);
         }
+        else if (strcmp(token_2, "REPORT") == 0)
+        {
+            char *token_3 = strtok(NULL, delimiters);
+            AdoptionReport *report = check_report(sntrph, token_3);
+            viewReport(report);
+        }
     }
-    // sendMessage(sntrph->current_user, , &sntrph);
     else if (strcmp(token, "ADD") == 0)
     {
         char *token_2 = strtok(NULL, delimiters);
@@ -4451,6 +4671,7 @@ void processCommand(SNTRPH *sntrph, char *input)
         }
         else if (strcmp(token_2, "ADOPTION_REPORT") == 0)
         {
+            addReport(sntrph);
         }
         else if (strcmp(token_2, "OFFICER") == 0)
         {
@@ -4468,6 +4689,9 @@ void processCommand(SNTRPH *sntrph, char *input)
         else if (strcmp(token_2, "CASE") == 0)
         {
             addCase(sntrph);
+        }
+        else if(strcmp(token_2, "INCIDENT") == 0){
+            addIncident(sntrph);
         }
     }
     else if (strcmp(token, "DELETE") == 0)
@@ -4631,7 +4855,7 @@ void processCommand(SNTRPH *sntrph, char *input)
                 return;
             }
         }
-          else if (token_2 != NULL && strcmp(token_2, "TRAIL") == 0)
+        else if (token_2 != NULL && strcmp(token_2, "TRAIL") == 0)
         {
             char *rest = strchr(input, ' '); // find first space after "FILTER OFFICERS"
             if (rest != NULL)
@@ -4647,7 +4871,7 @@ void processCommand(SNTRPH *sntrph, char *input)
                 return;
             }
         }
-          else if (token_2 != NULL && strcmp(token_2, "SERAPH") == 0)
+        else if (token_2 != NULL && strcmp(token_2, "SERAPH") == 0)
         {
             char *rest = strchr(input, ' '); // find first space after "FILTER OFFICERS"
             if (rest != NULL)
@@ -4838,6 +5062,13 @@ void free_SNTRPH(SNTRPH *system)
 
     system->caseList.case_count = 0;
 
+    for(int i =0; i < system->incidentList.i_count; i++){
+        if(system->incidentList.incidents[i]){
+            free(system->incidentList.incidents[i]);
+        }
+    }
+    system->incidentList.i_count = 0;
+
     // If SNTRPH *system itself was malloc’d and you want to free it too:
     // free(system);
 }
@@ -4896,6 +5127,11 @@ void initSNTRPH(SNTRPH *sntrph)
         sntrph->caseList.cases[i] = NULL;
         sntrph->caseList.archive[i] = NULL;
         sntrph->caseList.deleted[i] = NULL;
+    }
+
+    sntrph->incidentList.i_count = 0;
+    for(int i = 0; i < MAX_ADDRESSES; i++){
+        sntrph->incidentList.incidents[i] = NULL;
     }
 
     // No current user logged in yet

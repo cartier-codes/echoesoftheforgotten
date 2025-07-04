@@ -21,6 +21,8 @@ typedef struct CaseList CaseList;
 typedef struct OfficerList OfficerList;
 typedef struct GBOX GBOX;
 typedef struct GMessage GMessage;
+typedef struct Incident Incident;
+typedef struct IncidentList IncidentList;
 
 #define SLEEP(ms) Sleep(ms);
 #define MAX_NAME_LENGTH 50
@@ -153,6 +155,23 @@ struct CaseList{
     int deleted_count;
 
 };
+ struct Incident {
+    char incident_id[10];
+    char date[11];
+    char type[50];              // YYYY-MM-DD
+    char time[6];               // HH:MM
+    char location[100];
+    char description[256];
+    char lead[10];
+    char status[20];            // e.g. "Open", "Closed"
+};
+
+struct IncidentList{
+    Incident *incidents[MAX_ADDRESSES];
+    int i_count;
+} ;
+
+
 struct SNTRPH
 {
     PersonList personlist;
@@ -162,6 +181,8 @@ struct SNTRPH
     LogList logList;
     CaseList caseList;
     OfficerList officerList;
+    IncidentList incidentList;
+
     Officer *current_user;
     
 };
@@ -251,4 +272,6 @@ struct EMS{
     int size;
     int capacity;
 };
+//27/06/2025
+
 #endif
